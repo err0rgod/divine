@@ -127,29 +127,30 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const getAIResponse = async (userMessage) => {
-    // Show typing indicator or something similar here if desired.
-    // For this mock, we will just use a generic response logic.
-    // In production, you would do a fetch() to your backend API.
-    
-    // Fallback Mock Logic
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        let response = "I'm sorry, my connection to the server is currently simulated. How can I help you further?";
-        const lowerMsg = userMessage.toLowerCase();
-        
-        if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) {
-          response = "Hello there! I'm Divine. What's on your mind today?";
-        } else if (lowerMsg.includes('how are you')) {
-          response = "I'm feeling fantastic, thank you for asking! Ready to assist you with anything you need.";
-        } else if (lowerMsg.includes('name')) {
-          response = "My name is Divine, your personal AI assistant.";
-        } else if (lowerMsg.includes('deploy') || lowerMsg.includes('render')) {
-          response = "Deploying on Render is easy! I've already prepared the requirements.txt and gunicorn settings for the backend.";
-        }
+    // Show a small UI indication if desired
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
 
-        resolve(response);
-      }, 1000);
-    });
+      // The server sends back the text response in a custom header
+      const responseText = response.headers.get('X-Response-Text') || "Here is your response.";
+      
+      // Get the audio bytes
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      return { text: responseText, audioUrl };
+    } catch (error) {
+      console.error(error);
+      return { text: "I'm sorry, I couldn't connect to the server.", audioUrl: null };
+    }
   };
 
   const handleSendMessage = async (textOverride = null) => {
@@ -162,19 +163,30 @@ document.addEventListener('DOMContentLoaded', () => {
     appendMessage(text, 'user');
     saveChat(text, 'user');
 
+    // Show indicator
+    const aiMessageDiv = document.createElement('div');
+    aiMessageDiv.classList.add('message', 'ai');
+    aiMessageDiv.textContent = '...';
+    chatMessages.appendChild(aiMessageDiv);
+    scrollToBottom();
+
     // Fetch AI response
     try {
-      const responseText = await getAIResponse(text);
-      appendMessage(responseText, 'ai');
+      const { text: responseText, audioUrl } = await getAIResponse(text);
+      aiMessageDiv.textContent = responseText;
       saveChat(responseText, 'ai');
       
-      // Auto speak if they used voice to ask or if we want it always. 
-      // For now, always speak response to showcase the voice capability.
-      speakText(responseText);
+      // Play the audio
+      if (audioUrl) {
+        if (synth) synth.cancel(); // Stop browser TTS if any
+        const audio = new Audio(audioUrl);
+        audio.play().catch(e => console.error("Audio play error:", e));
+      }
 
     } catch (error) {
-      appendMessage("Sorry, I encountered an error.", 'ai');
+      aiMessageDiv.textContent = "Sorry, I encountered an error.";
     }
+    scrollToBottom();
   };
 
   chatForm.addEventListener('submit', (e) => {

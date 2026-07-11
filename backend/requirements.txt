@@ -3,3 +3,6 @@ PyAudio
 python-dotenv
 litellm
 elevenlabs
+fastapi
+uvicorn
+pydantic
