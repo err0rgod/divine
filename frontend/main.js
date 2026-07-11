@@ -4,6 +4,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const orbBtn = document.getElementById('orb-btn');
   const statusText = document.getElementById('status-text');
   const langSelect = document.getElementById('lang-select');
+  
+  // Tabs
+  const tabVoice = document.getElementById('tab-voice');
+  const tabChat = document.getElementById('tab-chat');
+  const viewVoice = document.getElementById('view-voice');
+  const viewChat = document.getElementById('view-chat');
+
+  // Chat UI Elements
+  const chatMessages = document.getElementById('chat-messages');
+  const chatForm = document.getElementById('chat-form');
+  const messageInput = document.getElementById('message-input');
+  const welcomeMessage = document.getElementById('welcome-message');
 
   let isListening = false;
   let audioContext = null;
@@ -11,6 +23,27 @@ document.addEventListener('DOMContentLoaded', () => {
   let sttSocket = null;
   let processor = null;
   let currentAudio = null;
+
+  // Tab Switching
+  tabVoice.addEventListener('click', () => {
+    tabVoice.classList.add('active');
+    tabChat.classList.remove('active');
+    viewVoice.classList.add('active');
+    viewChat.classList.remove('active');
+  });
+
+  tabChat.addEventListener('click', () => {
+    tabChat.classList.add('active');
+    tabVoice.classList.remove('active');
+    viewChat.classList.add('active');
+    viewVoice.classList.remove('active');
+    stopListening(); // stop orb if active
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+      setStatus('', 'Tap to connect');
+    }
+  });
 
   const setStatus = (status, text) => {
     orbBtn.className = 'orb-container ' + status;
@@ -57,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = JSON.parse(event.data);
         if (data.is_final) {
           stopListening();
-          handleResponse(data.transcript, currentLang);
+          handleVoiceResponse(data.transcript, currentLang);
         }
       };
 
@@ -115,21 +148,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (json.audioBase64) {
         audioUrl = `data:audio/mpeg;base64,${json.audioBase64}`;
       }
-      return audioUrl;
+      return { text: json.text, audioUrl };
     } catch (error) {
       console.error(error);
-      return null;
+      return { text: "Error connecting to server.", audioUrl: null };
     }
   };
 
-  const handleResponse = async (transcript, language) => {
+  const handleVoiceResponse = async (transcript, language) => {
     setStatus('thinking', 'Divine is thinking...');
     
-    const audioUrl = await getAIResponse(transcript, language);
+    const result = await getAIResponse(transcript, language);
     
-    if (audioUrl) {
+    if (result && result.audioUrl) {
       setStatus('speaking', 'Divine is speaking...');
-      currentAudio = new Audio(audioUrl);
+      currentAudio = new Audio(result.audioUrl);
       currentAudio.onended = () => {
         setStatus('', 'Tap to connect');
         currentAudio = null;
@@ -155,6 +188,52 @@ document.addEventListener('DOMContentLoaded', () => {
       setStatus('', 'Tap to connect');
     } else if (!orbBtn.classList.contains('thinking')) {
       startListening();
+    }
+  });
+
+  // --- Chat UI Logic --- //
+  
+  const appendMessage = (text, sender) => {
+    if (welcomeMessage) welcomeMessage.style.display = 'none';
+    
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message', sender);
+    msgDiv.textContent = text;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  };
+
+  chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    messageInput.value = '';
+    appendMessage(text, 'user');
+    
+    // Stop any currently playing audio if user sends a new message
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+
+    const aiMessageDiv = document.createElement('div');
+    aiMessageDiv.classList.add('message', 'ai');
+    aiMessageDiv.textContent = '...';
+    chatMessages.appendChild(aiMessageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    const currentLang = langSelect.value;
+    const result = await getAIResponse(text, currentLang);
+    
+    if (result) {
+      aiMessageDiv.textContent = result.text;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      
+      if (result.audioUrl) {
+        currentAudio = new Audio(result.audioUrl);
+        currentAudio.play().catch(console.error);
+      }
     }
   });
 

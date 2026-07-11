@@ -88,6 +88,10 @@ async def stt_endpoint(websocket: WebSocket, lang: str = "en"):
                         if response:
                             is_final = getattr(response.data, 'is_final', False)
                             transcript = getattr(response.data, 'transcript', '').strip()
+                            
+                            # Print to Render logs for debugging!
+                            print(f"Sarvam STT: transcript='{transcript}', is_final={is_final}")
+                            
                             if transcript:
                                 await websocket.send_json({
                                     "is_final": is_final,

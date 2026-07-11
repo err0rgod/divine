@@ -8,6 +8,12 @@
   --text-primary: #ffffff;
   --text-secondary: #888888;
   --font-main: 'Inter', sans-serif;
+  --user-msg-bg: rgba(102, 252, 241, 0.15);
+  --user-msg-border: rgba(102, 252, 241, 0.3);
+  --ai-msg-bg: rgba(255, 255, 255, 0.05);
+  --ai-msg-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
 }
 
 * {
@@ -32,16 +38,51 @@ body {
   width: 100%;
   height: 100vh;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
   position: relative;
 }
 
-.lang-toggle {
-  position: absolute;
-  top: 30px;
-  right: 30px;
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
   z-index: 100;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 10px 20px;
+  font-family: var(--font-main);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: rgba(102, 252, 241, 0.1);
+  border-color: var(--primary-glow);
+  color: var(--primary-glow);
+  box-shadow: 0 0 15px rgba(102, 252, 241, 0.2);
 }
 
 #lang-select {
@@ -54,14 +95,12 @@ body {
   font-size: 14px;
   outline: none;
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
   transition: all 0.3s ease;
 }
 
-#lang-select:hover, #lang-select:focus {
+#lang-select:hover {
   border-color: var(--primary-glow);
   color: var(--text-primary);
-  box-shadow: 0 0 15px rgba(102, 252, 241, 0.2);
 }
 
 #lang-select option {
@@ -69,9 +108,33 @@ body {
   color: var(--text-primary);
 }
 
+.content-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.view-section {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+}
+
+.view-section.active {
+  display: flex;
+  animation: fadeIn 0.4s ease;
+}
+
+/* Voice UI Styles */
 .voice-ui {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
   gap: 40px;
 }
@@ -139,9 +202,6 @@ body {
   pointer-events: none;
 }
 
-/* States */
-
-/* Hover state (Idle) */
 .orb-container:hover .orb {
   box-shadow: 0 0 30px rgba(102, 252, 241, 0.2), inset 0 0 30px rgba(102, 252, 241, 0.2);
   border-color: rgba(102, 252, 241, 0.3);
@@ -151,7 +211,6 @@ body {
   color: var(--primary-glow);
 }
 
-/* Listening State */
 .orb-container.listening .orb {
   background: rgba(102, 252, 241, 0.1);
   border-color: var(--primary-glow);
@@ -172,7 +231,6 @@ body {
   animation-delay: 1s;
 }
 
-/* Thinking State */
 .orb-container.thinking .orb {
   border-color: #ffb703;
   box-shadow: 0 0 40px rgba(255, 183, 3, 0.4), inset 0 0 40px rgba(255, 183, 3, 0.4);
@@ -184,7 +242,6 @@ body {
   opacity: 0.5;
 }
 
-/* Speaking State (AI replying) */
 .orb-container.speaking .orb {
   background: rgba(255, 51, 102, 0.1);
   border-color: var(--ai-glow);
@@ -193,8 +250,7 @@ body {
 }
 
 .orb-container.speaking .orb i {
-  color: var(--ai-glow);
-  opacity: 0; /* Hide mic icon when AI speaks */
+  opacity: 0;
 }
 
 .orb-container.speaking .ripple {
@@ -206,18 +262,111 @@ body {
   animation-delay: 0.75s;
 }
 
-/* Animations */
+/* Chat UI Styles */
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.messages-area {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  scroll-behavior: smooth;
+}
+
+.welcome-message {
+  margin: auto;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.welcome-message h2 {
+  background: linear-gradient(to right, var(--primary-glow), #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+}
+
+.message {
+  max-width: 80%;
+  padding: 15px 20px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.5;
+  animation: slideUp 0.4s ease;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: var(--user-msg-bg);
+  border: 1px solid var(--user-msg-border);
+  border-bottom-right-radius: 4px;
+}
+
+.message.ai {
+  align-self: flex-start;
+  background: var(--ai-msg-bg);
+  border: 1px solid var(--ai-msg-border);
+  border-bottom-left-radius: 4px;
+}
+
+.glass-input-area {
+  margin: 20px 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 5px 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+#message-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 16px;
+  padding: 12px 10px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.send-btn {
+  background: var(--primary-color);
+  color: #000;
+}
+
+.send-btn:hover {
+  background: var(--primary-glow);
+  transform: scale(1.05);
+}
+
 @keyframes rippleAnim {
-  0% {
-    width: 100px;
-    height: 100px;
-    opacity: 0.8;
-  }
-  100% {
-    width: 250px;
-    height: 250px;
-    opacity: 0;
-  }
+  0% { width: 100px; height: 100px; opacity: 0.8; }
+  100% { width: 250px; height: 250px; opacity: 0; }
 }
 
 @keyframes pulseThink {
@@ -228,4 +377,14 @@ body {
 @keyframes aiSpeak {
   0% { transform: scale(1); box-shadow: 0 0 30px rgba(255, 51, 102, 0.3); }
   100% { transform: scale(1.15); box-shadow: 0 0 80px rgba(255, 51, 102, 0.8); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
