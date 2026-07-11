@@ -9,7 +9,7 @@ import base64
 from sarvamai import AsyncSarvamAI
 
 from Client import chatbot
-import tts11
+
 
 app = FastAPI()
 
@@ -38,11 +38,16 @@ async def chat_endpoint(request: ChatRequest):
         print(f"\nUser: {user_message}")
         print(f"Assistant: {response_text}")
         
-        print("Generating audio...")
-        audio_bytes = await asyncio.to_thread(tts11.tts, response_text)
+        print("Generating audio with Sarvam...")
+        target_language = "hi-IN" if request.language == "hi" else "en-IN"
         
-        # Convert audio bytes to base64 so we can safely send JSON with unicode text
-        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        tts_response = await sarvam_client.text_to_speech.convert(
+            text=response_text,
+            target_language_code=target_language,
+            speaker="anushka"
+        )
+        
+        audio_b64 = tts_response.audios[0]
         
         return {
             "text": response_text,
