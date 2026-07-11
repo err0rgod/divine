@@ -95,9 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
           setStatus('listening', `"${data.transcript}"`);
         }
         
-        if (data.is_final && data.transcript) {
+        if (data.is_final) {
           stopListening();
-          handleVoiceResponse(data.transcript, currentLang);
+          if (data.transcript) {
+            handleVoiceResponse(data.transcript, currentLang);
+          } else {
+            setStatus('', 'Tap to connect');
+          }
         }
       };
 
@@ -184,9 +188,15 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   orbBtn.addEventListener('click', () => {
-    if (isListening) {
-      stopListening();
-      setStatus('', 'Tap to connect');
+    if (orbBtn.classList.contains('listening')) {
+      // User tapped while listening -> tell Sarvam we are done speaking
+      if (sttSocket && sttSocket.readyState === WebSocket.OPEN) {
+        sttSocket.send("STOP");
+        setStatus('thinking', 'Divine is thinking...');
+      } else {
+        stopListening();
+        setStatus('', 'Tap to connect');
+      }
     } else if (orbBtn.classList.contains('speaking')) {
       if (currentAudio) {
         currentAudio.pause();

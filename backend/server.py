@@ -68,19 +68,24 @@ async def stt_endpoint(websocket: WebSocket, lang: str = "en"):
             model="saaras:v3",
             mode="transcribe",
             language_code=language_code,
-            high_vad_sensitivity=True
+            high_vad_sensitivity=True,
+            input_audio_codec="pcm_s16le"
         ) as sarvam_ws:
             
             async def receive_from_client():
                 try:
                     while True:
-                        data = await websocket.receive_bytes()
-                        base64_data = base64.b64encode(data).decode("utf-8")
-                        await sarvam_ws.transcribe(
-                            audio=base64_data,
-                            encoding="audio/wav",
-                            sample_rate=16000
-                        )
+                        message = await websocket.receive()
+                        if "bytes" in message:
+                            base64_data = base64.b64encode(message["bytes"]).decode("utf-8")
+                            await sarvam_ws.transcribe(
+                                audio=base64_data,
+                                encoding="pcm_s16le",
+                                sample_rate=16000
+                            )
+                        elif "text" in message and message["text"] == "STOP":
+                            await sarvam_ws.flush()
+                            # Do not break here, wait for sarvam to send the final response
                 except WebSocketDisconnect:
                     pass
                 except Exception as e:
