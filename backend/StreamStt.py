@@ -41,29 +41,50 @@ async def mic_streamer(ws, p, stream ):
 
 conversation_task = None
 assistant_speaking = False
+
+async def handle_conversation(transcript):
+    global assistant_speaking
+    try:
+        assistant_speaking = True
+        print("\nCalling Model.......")
+        responseText = await asyncio.to_thread(chatbot.getResponse, transcript)
+        print(f"\nUser: {transcript}")
+        print(f"Assistant: {responseText}")
+        
+        await asyncio.to_thread(tts11.tts, responseText)
+    except Exception as e:
+        print(f"Conversation error: {e}")
+    finally:
+        assistant_speaking = False
+        print("\n Speak.....")
+
 # websocket receiver 
 async def text_receiver(ws):
+    global conversation_task, assistant_speaking
     # cont listen and transcribe from sarvam
     try:
         while True:
             response = await ws.recv()
+            
             if assistant_speaking:
                 continue
+                
             if response:
-                transcript = getattr(response.data, 'transcript', '')
-                # calling tts from getModel to get the reponse in text and then sending to tts 
-                print("\nCalling Model.......")
-                assistant_speaking = True
-                responseText = chatbot.getResponse(transcript)
-                print(f"{transcript}", end=" ", flush=True)
-                tts11.tts(responseText)
-                print("\n",responseText)
-                assistant_speaking = False
-                print("\n Speak.....")
+                is_final = getattr(response.data, 'is_final', False)
+                if not is_final:
+                    continue
+                
+                transcript = getattr(response.data, 'transcript', '').strip()
+                if not transcript:
+                    continue
 
+                if conversation_task and not conversation_task.done():
+                    continue
+
+                conversation_task = asyncio.create_task(handle_conversation(transcript))
 
     except Exception as e:
-        print(f"receiver error.{e}")
+        print(f"receiver error: {e}")
 
 # main async func handler to gather stream and receive
 async def main():

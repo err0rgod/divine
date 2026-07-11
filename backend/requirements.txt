@@ -1,0 +1,5 @@
+sarvamai
+PyAudio
+python-dotenv
+litellm
+elevenlabs

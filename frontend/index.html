@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Divine AI Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="glass-header">
+        <div class="header-left">
+          <div class="logo">
+            <i class="ri-blaze-fill"></i>
+          </div>
+          <h1>Divine AI</h1>
+        </div>
+        <div class="header-right">
+          <button id="new-chat-btn" class="icon-btn" title="New Chat">
+            <i class="ri-add-line"></i>
+          </button>
+        </div>
+      </header>
+
+      <main class="chat-container">
+        <div id="chat-messages" class="messages-area">
+          <!-- Messages will be injected here by JS -->
+          <div class="welcome-message" id="welcome-message">
+            <h2>Hi, I'm Divine</h2>
+            <p>Your personal AI assistant. How can I help you today?</p>
+          </div>
+        </div>
+
+        <div class="input-area-wrapper">
+          <div class="speaking-indicator hidden" id="speaking-indicator">
+            <div class="waveform">
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+            </div>
+            <span>Listening...</span>
+          </div>
+
+          <form id="chat-form" class="glass-input-area">
+            <button type="button" id="speak-btn" class="icon-btn mic-btn" title="Speaking Mode">
+              <i class="ri-mic-line"></i>
+            </button>
+            <input type="text" id="message-input" placeholder="Type a message or click the mic to speak..." autocomplete="off" />
+            <button type="submit" id="send-btn" class="icon-btn send-btn" title="Send Message">
+              <i class="ri-send-plane-fill"></i>
+            </button>
+          </form>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
