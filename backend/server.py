@@ -40,13 +40,13 @@ async def chat_endpoint(request: ChatRequest):
         print("Generating audio...")
         audio_bytes = await asyncio.to_thread(tts11.tts, response_text)
         
-        return Response(
-            content=audio_bytes, 
-            media_type="audio/mpeg",
-            headers={
-                "X-Response-Text": response_text.replace("\n", " ").replace("\r", "")
-            }
-        )
+        # Convert audio bytes to base64 so we can safely send JSON with unicode text
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        
+        return {
+            "text": response_text,
+            "audioBase64": audio_b64
+        }
     except Exception as e:
         print(f"Server error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

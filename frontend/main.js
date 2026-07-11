@@ -180,12 +180,13 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(`Server returned ${response.status}`);
       }
 
-      // The server sends back the text response in a custom header
-      const responseText = response.headers.get('X-Response-Text') || "Here is your response.";
+      const json = await response.json();
+      const responseText = json.text || "Here is your response.";
       
-      // Get the audio bytes
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      let audioUrl = null;
+      if (json.audioBase64) {
+        audioUrl = `data:audio/mpeg;base64,${json.audioBase64}`;
+      }
       
       return { text: responseText, audioUrl };
     } catch (error) {
