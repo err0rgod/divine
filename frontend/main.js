@@ -10,57 +10,98 @@ document.addEventListener('DOMContentLoaded', () => {
   const speakingIndicator = document.getElementById('speaking-indicator');
 
   let isListening = false;
-  let recognition = null;
   let synth = window.speechSynthesis;
+  let audioContext = null;
+  let mediaStream = null;
+  let sttSocket = null;
+  let processor = null;
 
-  // Initialize Speech Recognition if supported
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
+  const startListening = async () => {
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      sttSocket = new WebSocket(`${wsProtocol}//${window.location.host}/api/stt`);
+      
+      sttSocket.onopen = () => {
+        isListening = true;
+        speakBtn.classList.add('active');
+        speakingIndicator.classList.remove('hidden');
+        messageInput.placeholder = "Listening (Hindi/English)...";
 
-    recognition.onstart = () => {
-      isListening = true;
-      speakBtn.classList.add('active');
-      speakingIndicator.classList.remove('hidden');
-      messageInput.placeholder = "Listening...";
-    };
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        processor = audioContext.createScriptProcessor(1024, 1, 1);
+        
+        processor.onaudioprocess = (e) => {
+          if (!isListening || sttSocket.readyState !== WebSocket.OPEN) return;
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcm16 = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            pcm16[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
+          }
+          sttSocket.send(pcm16.buffer);
+        };
+        
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+      };
 
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      messageInput.value = transcript;
-      handleSendMessage(transcript);
-    };
+      sttSocket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        messageInput.value = data.transcript;
+        if (data.is_final) {
+          stopListening();
+          handleSendMessage(data.transcript);
+        }
+      };
 
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error", event.error);
-      stopListening();
-    };
-
-    recognition.onend = () => {
-      stopListening();
-    };
-  } else {
-    speakBtn.style.display = 'none';
-    console.warn("Speech recognition not supported in this browser.");
-  }
-
-  function toggleListening() {
-    if (isListening) {
-      recognition.stop();
-    } else {
-      recognition.start();
+      sttSocket.onerror = (error) => {
+        console.error("STT WebSocket Error:", error);
+        stopListening();
+      };
+      
+      sttSocket.onclose = () => {
+        stopListening();
+      };
+      
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      alert("Microphone access denied or unavailable.");
     }
-  }
+  };
 
-  function stopListening() {
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  const stopListening = () => {
     isListening = false;
     speakBtn.classList.remove('active');
     speakingIndicator.classList.add('hidden');
     messageInput.placeholder = "Type a message or click the mic to speak...";
-  }
+    
+    if (processor) {
+      processor.disconnect();
+      processor = null;
+    }
+    if (audioContext) {
+      audioContext.close();
+      audioContext = null;
+    }
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream = null;
+    }
+    if (sttSocket && sttSocket.readyState === WebSocket.OPEN) {
+      sttSocket.close();
+      sttSocket = null;
+    }
+  };
 
   speakBtn.addEventListener('click', toggleListening);
 

@@ -1,10 +1,12 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import asyncio
+import base64
+from sarvamai import AsyncSarvamAI
 
 from Client import chatbot
 import tts11
@@ -18,6 +20,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+sarvam_client = AsyncSarvamAI(api_subscription_key=os.getenv("SARVAM_API_KEY"))
 
 class ChatRequest(BaseModel):
     message: str
@@ -33,7 +37,6 @@ async def chat_endpoint(request: ChatRequest):
         print(f"\nUser: {user_message}")
         print(f"Assistant: {response_text}")
         
-        # Get audio bytes from ElevenLabs
         print("Generating audio...")
         audio_bytes = await asyncio.to_thread(tts11.tts, response_text)
         
@@ -47,6 +50,66 @@ async def chat_endpoint(request: ChatRequest):
     except Exception as e:
         print(f"Server error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.websocket("/api/stt")
+async def stt_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    
+    try:
+        async with sarvam_client.speech_to_text_streaming.connect(
+            model="saaras:v3",
+            mode="transcribe",
+            language_code="hi-IN",
+            high_vad_sensitivity=True
+        ) as sarvam_ws:
+            
+            async def receive_from_client():
+                try:
+                    while True:
+                        data = await websocket.receive_bytes()
+                        base64_data = base64.b64encode(data).decode("utf-8")
+                        await sarvam_ws.transcribe(
+                            audio=base64_data,
+                            encoding="audio/wav",
+                            sample_rate=16000
+                        )
+                except WebSocketDisconnect:
+                    pass
+                except Exception as e:
+                    print(f"Client to Sarvam error: {e}")
+            
+            async def receive_from_sarvam():
+                try:
+                    while True:
+                        response = await sarvam_ws.recv()
+                        if response:
+                            is_final = getattr(response.data, 'is_final', False)
+                            transcript = getattr(response.data, 'transcript', '').strip()
+                            if transcript:
+                                await websocket.send_json({
+                                    "is_final": is_final,
+                                    "transcript": transcript
+                                })
+                except Exception as e:
+                    print(f"Sarvam to Client error: {e}")
+                    
+            client_task = asyncio.create_task(receive_from_client())
+            sarvam_task = asyncio.create_task(receive_from_sarvam())
+            
+            done, pending = await asyncio.wait(
+                [client_task, sarvam_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            for p in pending:
+                p.cancel()
+                
+    except Exception as e:
+        print(f"WebSocket Error: {e}")
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
 
 # Mount frontend/dist directory if it exists
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'dist')
