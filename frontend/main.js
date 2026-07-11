@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const json = await response.json();
       let audioUrl = null;
       if (json.audioBase64) {
-        audioUrl = `data:audio/wav;base64,${json.audioBase64}`;
+        audioUrl = `data:audio/mpeg;base64,${json.audioBase64}`;
       }
       return { text: json.text, audioUrl };
     } catch (error) {
