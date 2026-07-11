@@ -66,6 +66,11 @@ async def chat_endpoint(request: ChatRequest):
         print(f"Server error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/clear")
+def clear_chat_endpoint():
+    chatbot.clear()
+    return {"status": "cleared"}
+
 @app.websocket("/api/stt")
 async def stt_endpoint(websocket: WebSocket, lang: str = "en"):
     await websocket.accept()

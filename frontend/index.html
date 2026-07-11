@@ -17,10 +17,15 @@
           <button id="tab-chat" class="tab-btn"><i class="ri-chat-3-line"></i> Chat Mode</button>
         </div>
         <div class="lang-toggle">
-          <select id="lang-select">
-            <option value="en">English</option>
-            <option value="hi">Hindi</option>
-          </select>
+          <div class="header-controls" style="display: flex; gap: 10px; align-items: center;">
+        <select id="lang-select">
+          <option value="en">English (India)</option>
+          <option value="hi">Hindi</option>
+        </select>
+        <button id="new-chat-btn" class="tab-btn" style="color: var(--ai-glow); border-color: rgba(255,51,102,0.3);">
+          <i class="ri-delete-bin-line"></i> Clear Chat
+        </button>
+      </div>
         </div>
       </header>
 

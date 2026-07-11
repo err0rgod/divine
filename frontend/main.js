@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatForm = document.getElementById('chat-form');
   const messageInput = document.getElementById('message-input');
   const welcomeMessage = document.getElementById('welcome-message');
+  const newChatBtn = document.getElementById('new-chat-btn');
 
   let isListening = false;
   let audioContext = null;
@@ -253,6 +254,28 @@ document.addEventListener('DOMContentLoaded', () => {
         currentAudio.play().catch(console.error);
       }
     }
+  });
+
+  newChatBtn.addEventListener('click', async () => {
+    try {
+      await fetch('/api/clear', { method: 'POST' });
+    } catch (e) {
+      console.error('Failed to clear chat on server', e);
+    }
+    
+    // Clear UI
+    chatMessages.innerHTML = '';
+    if (welcomeMessage) {
+      welcomeMessage.style.display = 'block';
+      chatMessages.appendChild(welcomeMessage);
+    }
+    
+    // Stop any audio
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+    setStatus('', 'Tap to connect');
   });
 
 });

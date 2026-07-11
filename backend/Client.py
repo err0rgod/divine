@@ -13,6 +13,9 @@ class Chatbot:
 
     def addMessage(self,role,content):
         self.messages.append({"role":role,"content":content})
+        
+    def clear(self):
+        self.messages = [self.messages[0]]
 
     def getResponse(self,userInput, language="en"):
         lang_instruction = " (Respond entirely in English.)" if language == "en" else " (Respond entirely in Hindi.)"
