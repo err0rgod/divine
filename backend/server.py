@@ -25,14 +25,15 @@ sarvam_client = AsyncSarvamAI(api_subscription_key=os.getenv("SARVAM_API_KEY"))
 
 class ChatRequest(BaseModel):
     message: str
+    language: str = "en"
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
         user_message = request.message
         
-        print("\nCalling Model.......")
-        response_text = await asyncio.to_thread(chatbot.getResponse, user_message)
+        print(f"\nCalling Model ({request.language}).......")
+        response_text = await asyncio.to_thread(chatbot.getResponse, user_message, request.language)
         
         print(f"\nUser: {user_message}")
         print(f"Assistant: {response_text}")
@@ -52,14 +53,16 @@ async def chat_endpoint(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.websocket("/api/stt")
-async def stt_endpoint(websocket: WebSocket):
+async def stt_endpoint(websocket: WebSocket, lang: str = "en"):
     await websocket.accept()
+    
+    language_code = "hi-IN" if lang == "hi" else "en-IN"
     
     try:
         async with sarvam_client.speech_to_text_streaming.connect(
             model="saaras:v3",
             mode="transcribe",
-            language_code="hi-IN",
+            language_code=language_code,
             high_vad_sensitivity=True
         ) as sarvam_ws:
             

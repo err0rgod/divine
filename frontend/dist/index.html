@@ -3,60 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Divine AI Assistant</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Divine Voice Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <script type="module" crossorigin src="/assets/index-BCJmTYPS.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-C4VuR-ET.css">
+    <script type="module" crossorigin src="/assets/index-B8SE_z51.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C7-HLa_H.css">
   </head>
   <body>
     <div class="app-container">
-      <header class="glass-header">
-        <div class="header-left">
-          <div class="logo">
-            <i class="ri-blaze-fill"></i>
+      <div class="lang-toggle">
+        <select id="lang-select">
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+        </select>
+      </div>
+      <div class="voice-ui">
+        <h1 class="title">Divine</h1>
+        <p class="status-text" id="status-text">Tap to connect</p>
+        
+        <div class="orb-container" id="orb-btn">
+          <div class="orb" id="orb">
+            <i class="ri-mic-fill" id="mic-icon"></i>
           </div>
-          <h1>Divine AI</h1>
+          <div class="ripple" id="ripple1"></div>
+          <div class="ripple" id="ripple2"></div>
         </div>
-        <div class="header-right">
-          <button id="new-chat-btn" class="icon-btn" title="New Chat">
-            <i class="ri-add-line"></i>
-          </button>
-        </div>
-      </header>
-
-      <main class="chat-container">
-        <div id="chat-messages" class="messages-area">
-          <!-- Messages will be injected here by JS -->
-          <div class="welcome-message" id="welcome-message">
-            <h2>Hi, I'm Divine</h2>
-            <p>Your personal AI assistant. How can I help you today?</p>
-          </div>
-        </div>
-
-        <div class="input-area-wrapper">
-          <div class="speaking-indicator hidden" id="speaking-indicator">
-            <div class="waveform">
-              <span class="bar"></span>
-              <span class="bar"></span>
-              <span class="bar"></span>
-              <span class="bar"></span>
-              <span class="bar"></span>
-            </div>
-            <span>Listening...</span>
-          </div>
-
-          <form id="chat-form" class="glass-input-area">
-            <button type="button" id="speak-btn" class="icon-btn mic-btn" title="Speaking Mode">
-              <i class="ri-mic-line"></i>
-            </button>
-            <input type="text" id="message-input" placeholder="Type a message or click the mic to speak..." autocomplete="off" />
-            <button type="submit" id="send-btn" class="icon-btn send-btn" title="Send Message">
-              <i class="ri-send-plane-fill"></i>
-            </button>
-          </form>
-        </div>
-      </main>
+      </div>
     </div>
   </body>
 </html>

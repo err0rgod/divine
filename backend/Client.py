@@ -14,9 +14,10 @@ class Chatbot:
     def addMessage(self,role,content):
         self.messages.append({"role":role,"content":content})
 
-    def getResponse(self,userInput):
-        self.addMessage("user",userInput)
-        print("\nResponding....")
+    def getResponse(self,userInput, language="en"):
+        lang_instruction = " (Respond entirely in English.)" if language == "en" else " (Respond entirely in Hindi.)"
+        self.addMessage("user", userInput + lang_instruction)
+        print(f"\nResponding in {language}....")
         response = completion(
             model="deepseek/deepseek-chat",
             messages=self.messages,
