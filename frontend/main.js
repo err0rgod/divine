@@ -88,7 +88,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       sttSocket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.is_final) {
+        console.log("Sarvam WS Payload:", data);
+        
+        if (data.transcript && !data.is_final) {
+          // Show partial transcript in the UI!
+          setStatus('listening', `"${data.transcript}"`);
+        }
+        
+        if (data.is_final && data.transcript) {
           stopListening();
           handleVoiceResponse(data.transcript, currentLang);
         }
