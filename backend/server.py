@@ -38,16 +38,29 @@ async def chat_endpoint(request: ChatRequest):
         print(f"Assistant: {response_text}")
         
         audio_b64 = None
+        mime_type = "audio/mpeg"
         try:
             print("Generating audio with ElevenLabs...")
             audio_bytes = await asyncio.to_thread(tts11.tts, response_text)
             audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
         except Exception as tts_error:
-            print(f"TTS generation failed: {tts_error}")
+            print(f"ElevenLabs TTS failed: {tts_error}. Falling back to Sarvam TTS...")
+            try:
+                target_language = "hi-IN" if request.language == "hi" else "en-IN"
+                tts_response = await sarvam_client.text_to_speech.convert(
+                    text=response_text,
+                    target_language_code=target_language,
+                    speaker="anushka"
+                )
+                audio_b64 = tts_response.audios[0]
+                mime_type = "audio/wav"
+            except Exception as sarvam_error:
+                print(f"Sarvam fallback TTS also failed: {sarvam_error}")
         
         return {
             "text": response_text,
-            "audioBase64": audio_b64
+            "audioBase64": audio_b64,
+            "mimeType": mime_type
         }
     except Exception as e:
         print(f"Server error: {e}")
