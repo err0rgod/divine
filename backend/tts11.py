@@ -13,7 +13,7 @@ def tts(prompt : str):
     audio_generator = client.text_to_speech.convert(
         text=prompt,
         voice_id="EXAVITQu4vr4xnSDxMaL",
-        model_id="eleven_v3",
+        model_id="eleven_multilingual_v2",
         voice_settings=generate_voicesettings(prompt)
     )
     

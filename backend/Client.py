@@ -35,53 +35,57 @@ chatbot = Chatbot()
 def generate_voicesettings(response_prompt):
         print("\nGenerating voice settings....")
 
-        response = completion(
-            model="deepseek/deepseek-chat",
-            messages=[
-                {
-                    "role": "system",
-                    "content": """
-    You are an ElevenLabs voice emotion expert.
+        try:
+            response = completion(
+                model="deepseek/deepseek-chat",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """
+        You are an ElevenLabs voice emotion expert.
 
-    Your task is to analyze the assistant's response and generate the best voice settings.
+        Your task is to analyze the assistant's response and generate the best voice settings.
 
-    Parameters:
-    - stability: 0.0-1.0
-            Lower = expressive/emotional
-            Higher = calm/consistent
+        Parameters:
+        - stability: 0.0-1.0
+                Lower = expressive/emotional
+                Higher = calm/consistent
 
-    - similarity_boost: 0.0-1.0
-            Preserve original voice identity.
-            Usually between 0.6 and 0.95.
+        - similarity_boost: 0.0-1.0
+                Preserve original voice identity.
+                Usually between 0.6 and 0.95.
 
-    - style: 0.0-1.0
-            Higher = dramatic/performance.
-            Lower = neutral.
+        - style: 0.0-1.0
+                Higher = dramatic/performance.
+                Lower = neutral.
 
-    Return ONLY valid JSON.
+        Return ONLY valid JSON.
 
-    Example:
-    {   
-            "stability": 0.28,
-            "similarity_boost": 0.81,
-            "style": 0.67
-    }   
-""" 
-                },
-                {
-                    "role": "user",
-                    "content": response_prompt
-                }
-            ],
-            temperature=0.4,
-            max_tokens=100,
-            response_format={"type": "json_object"}
-        )
+        Example:
+        {   
+                "stability": 0.28,
+                "similarity_boost": 0.81,
+                "style": 0.67
+        }   
+    """ 
+                    },
+                    {
+                        "role": "user",
+                        "content": response_prompt
+                    }
+                ],
+                temperature=0.4,
+                max_tokens=100,
+                response_format={"type": "json_object"}
+            )
 
-        settings = json.loads(response.choices[0].message.content)
+            settings = json.loads(response.choices[0].message.content)
 
-        return VoiceSettings(
-            stability=float(settings["stability"]),
-            similarity_boost=float(settings["similarity_boost"]),
-            style=float(settings["style"])
-        )
+            return VoiceSettings(
+                stability=float(settings.get("stability", 0.5)),
+                similarity_boost=float(settings.get("similarity_boost", 0.75)),
+                style=float(settings.get("style", 0.0))
+            )
+        except Exception as e:
+            print(f"Failed to generate voice settings: {e}")
+            return VoiceSettings(stability=0.5, similarity_boost=0.75, style=0.0)

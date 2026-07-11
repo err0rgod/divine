@@ -37,11 +37,13 @@ async def chat_endpoint(request: ChatRequest):
         print(f"\nUser: {user_message}")
         print(f"Assistant: {response_text}")
         
-        print("Generating audio with ElevenLabs...")
-        audio_bytes = await asyncio.to_thread(tts11.tts, response_text)
-        
-        # Convert audio bytes to base64 so we can safely send JSON with unicode text
-        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        audio_b64 = None
+        try:
+            print("Generating audio with ElevenLabs...")
+            audio_bytes = await asyncio.to_thread(tts11.tts, response_text)
+            audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        except Exception as tts_error:
+            print(f"TTS generation failed: {tts_error}")
         
         return {
             "text": response_text,
