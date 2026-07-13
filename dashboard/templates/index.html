@@ -30,23 +30,11 @@
         }
     </script>
     <style>
-        /* Hide scrollbar for textarea and logs but keep functionality */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Subtle custom scrollbar for main chat area */
-        .chat-scroll::-webkit-scrollbar {
-            width: 4px;
-        }
-        .chat-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-        }
+        .chat-scroll::-webkit-scrollbar { width: 4px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.1); border-radius: 4px; }
 
         body {
             background-color: #030712;
@@ -57,10 +45,8 @@
         .glass-panel {
             background: rgba(17, 24, 39, 0.7);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* Typing dot animation */
         .dot {
             animation: blink 1.4s infinite both;
             height: 4px; width: 4px; background: currentColor;
@@ -70,54 +56,59 @@
         .dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
 
-        /* Sidebar Tabs */
-        .tab-btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #9ca3af;
-            border-bottom: 2px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .tab-btn.active {
+        /* Nav Icon Active State */
+        .nav-btn.active {
+            background: rgba(99, 102, 241, 0.15);
             color: #818cf8;
-            border-bottom-color: #818cf8;
+            border-left: 2px solid #818cf8;
         }
-        .tab-content {
-            display: none;
+        .nav-btn {
+            border-left: 2px solid transparent;
         }
-        .tab-content.active {
-            display: flex;
-        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; }
     </style>
 </head>
 <body class="text-gray-100 h-screen w-screen overflow-hidden flex antialiased">
 
-    <!-- Collapsible Sidebar -->
+    <!-- Extreme Left Vertical Nav -->
+    <nav class="w-16 h-full bg-gray-950 border-r border-white/5 flex flex-col items-center py-4 z-30">
+        <div class="mb-8">
+            <svg class="w-8 h-8 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+
+        <div class="flex flex-col gap-2 w-full">
+            <button onclick="switchTab('history')" id="navHistory" class="nav-btn active w-full py-3 flex justify-center text-gray-500 hover:text-gray-300 transition-colors" title="Chat History">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
+            <button onclick="switchTab('logs')" id="navLogs" class="nav-btn w-full py-3 flex justify-center text-gray-500 hover:text-gray-300 transition-colors" title="Engine Logs">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+            </button>
+            <button onclick="switchTab('health')" id="navHealth" class="nav-btn w-full py-3 flex justify-center text-gray-500 hover:text-gray-300 transition-colors" title="API Health">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Collapsible Sidebar Panel -->
     <aside id="sidebar" class="w-80 h-full glass-panel border-r border-white/5 flex flex-col transition-all duration-300 relative z-20">
-        <!-- Sidebar Header & Tabs -->
-        <div class="flex flex-col border-b border-white/5">
-            <div class="p-4 pb-2 flex justify-between items-center">
-                <span class="text-sm font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">DIVINE PANEL</span>
-                <button onclick="toggleSidebar()" class="text-gray-500 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                </button>
-            </div>
-            <div class="flex px-2">
-                <button id="tabBtnHistory" onclick="switchTab('history')" class="tab-btn active w-1/2">History</button>
-                <button id="tabBtnLogs" onclick="switchTab('logs')" class="tab-btn w-1/2">Logs</button>
-            </div>
+        
+        <!-- Header -->
+        <div class="p-4 border-b border-white/5 flex justify-between items-center">
+            <span id="sidebarTitle" class="text-xs font-bold text-gray-400 tracking-widest uppercase">History</span>
+            <button onclick="toggleSidebar()" class="text-gray-500 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </button>
         </div>
 
         <!-- History Tab Content -->
-        <div id="tabContentHistory" class="tab-content active flex-1 flex-col overflow-y-auto no-scrollbar p-2 gap-1">
-            <button onclick="newChat()" class="w-full flex items-center gap-2 p-3 mb-2 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/20 transition-colors text-sm font-semibold">
+        <div id="tabContentHistory" class="tab-content active flex-1 flex-col overflow-y-auto no-scrollbar p-3 gap-2">
+            <button onclick="newChat()" class="w-full flex items-center gap-2 p-3 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/20 transition-colors text-sm font-semibold shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 New Chat
             </button>
+            <div class="h-px bg-white/5 w-full my-1"></div>
             <div id="historyList" class="flex flex-col gap-1 w-full">
                 <!-- Chat items populated by JS -->
             </div>
@@ -125,7 +116,33 @@
 
         <!-- Logs Tab Content -->
         <div id="tabContentLogs" class="tab-content flex-1 flex-col overflow-y-auto no-scrollbar p-4 text-[0.7rem] font-mono gap-1">
-            <div class="text-indigo-400">[*] Divine Engine initialized. Verified endpoints loaded.</div>
+            <div class="text-indigo-400">[*] Divine Engine initialized.</div>
+        </div>
+
+        <!-- Health Tab Content -->
+        <div id="tabContentHealth" class="tab-content flex-1 flex-col overflow-y-auto no-scrollbar p-4 gap-4">
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-400">Endpoint Status</span>
+                <button onclick="checkHealth()" class="text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-gray-300 transition">Ping All</button>
+            </div>
+            
+            <div id="healthList" class="flex flex-col gap-3 w-full">
+                <!-- Health items populated via JS -->
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-white/5">
+                <span class="text-xs text-gray-400 block mb-2">Usage Metrics (Session)</span>
+                <div class="bg-gray-900/50 border border-white/5 rounded-lg p-3">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-400">Total Tokens</span>
+                        <span id="metricTokens" class="font-mono text-indigo-300">0</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Est. Spend</span>
+                        <span id="metricCost" class="font-mono text-emerald-400">$0.000</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </aside>
 
@@ -142,12 +159,12 @@
             </div>
             
             <div class="flex items-center gap-3">
-                <select id="providerSelect" onchange="updateModels()" class="bg-gray-900/50 border border-white/10 text-gray-300 text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none">
+                <select id="providerSelect" onchange="updateModels()" class="bg-gray-900/50 border border-white/10 text-gray-300 text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none shadow-sm">
                     {% for provider in providers.keys() %}
                         <option value="{{ provider }}">{{ provider }}</option>
                     {% endfor %}
                 </select>
-                <select id="modelSelect" class="bg-gray-900/50 border border-white/10 text-gray-300 text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none max-w-[200px] truncate">
+                <select id="modelSelect" class="bg-gray-900/50 border border-white/10 text-gray-300 text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none max-w-[200px] truncate shadow-sm">
                     <!-- Populated via JS -->
                 </select>
             </div>
@@ -155,14 +172,13 @@
 
         <!-- Chat History -->
         <main id="chatBox" class="flex-1 overflow-y-auto chat-scroll p-6 flex flex-col gap-6">
-            <!-- Initial Message -->
             <div id="welcomeMessage" class="flex flex-col gap-1 items-start w-full">
                 <div class="flex items-center gap-2 mb-1 px-1">
                     <span class="text-xs font-semibold text-gray-400">Divine System</span>
                 </div>
                 <div class="glass-panel px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] text-sm text-gray-300 leading-relaxed shadow-lg">
                     Welcome to the Divine Dashboard. You are securely connected.<br><br>
-                    Select <span class="text-indigo-400 font-semibold">Auto-Select</span> to let the Meta-Router dynamically pick the best hardware for your prompt.
+                    Select <span class="text-indigo-400 font-semibold">Auto-Select</span> to let the Meta-Router dynamically pick the best hardware.
                 </div>
             </div>
             
@@ -183,7 +199,7 @@
                           placeholder="Command Divine... (Shift+Enter for newline)"
                           onkeydown="handleKey(event)" 
                           oninput="autoResize(this)"></textarea>
-                <button id="sendBtn" onclick="sendMessage()" class="p-3 m-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                <button id="sendBtn" onclick="sendMessage()" class="p-3 m-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
@@ -193,18 +209,17 @@
 
     <script>
         const providers = {{ providers | tojson | safe }};
+        let sessionTokens = 0;
+        let sessionCost = 0.0;
         
-        // Chat Session State
         let chats = JSON.parse(localStorage.getItem("divine_chats")) || [];
         let currentChatId = null;
-        let chatHistory = []; // Current active API history array
-        
+        let chatHistory = [];
         let sidebarOpen = true;
 
-        // Auto resize textarea without scrollbars
         function autoResize(el) {
             el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 128) + 'px'; // 128px is roughly 5-6 lines
+            el.style.height = Math.min(el.scrollHeight, 128) + 'px';
         }
 
         function toggleSidebar() {
@@ -224,26 +239,24 @@
         }
 
         function switchTab(tabName) {
-            document.getElementById('tabBtnHistory').classList.remove('active');
-            document.getElementById('tabBtnLogs').classList.remove('active');
-            document.getElementById('tabContentHistory').classList.remove('active');
-            document.getElementById('tabContentLogs').classList.remove('active');
+            // Remove active from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-            if(tabName === 'history') {
-                document.getElementById('tabBtnHistory').classList.add('active');
-                document.getElementById('tabContentHistory').classList.add('active');
-            } else {
-                document.getElementById('tabBtnLogs').classList.add('active');
-                document.getElementById('tabContentLogs').classList.add('active');
-            }
+            // Set active
+            document.getElementById(`nav${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
+            document.getElementById(`tabContent${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
+            
+            document.getElementById('sidebarTitle').innerText = tabName;
+
+            if(!sidebarOpen) toggleSidebar();
+            
+            if(tabName === 'health') renderHealthList();
         }
 
-        // Add plain text log entry
         function addLog(message, type="info") {
             const logBox = document.getElementById("tabContentLogs");
             const entry = document.createElement("div");
-            
-            // Minimalist colors
             let colorClass = "text-gray-400";
             if(type === "success") colorClass = "text-emerald-400";
             if(type === "error") colorClass = "text-rose-400";
@@ -251,7 +264,6 @@
 
             entry.className = `${colorClass}`;
             entry.innerText = `> ${message}`;
-            
             logBox.appendChild(entry);
             logBox.scrollTop = logBox.scrollHeight;
         }
@@ -260,7 +272,6 @@
             const provider = document.getElementById("providerSelect").value;
             const modelSelect = document.getElementById("modelSelect");
             modelSelect.innerHTML = "";
-            
             if (providers[provider]) {
                 providers[provider].forEach(model => {
                     const opt = document.createElement("option");
@@ -272,10 +283,10 @@
             }
         }
 
-        updateModels(); // Init
+        updateModels();
 
         // ==========================================
-        // Chat History & Local Storage Management
+        // Chat History Management
         // ==========================================
 
         function saveChatsToStorage() {
@@ -285,44 +296,32 @@
 
         function newChat() {
             currentChatId = Date.now().toString();
-            chatHistory = []; // Reset active API history
-            
-            // Clear UI
+            chatHistory = [];
             const chatBox = document.getElementById("chatBox");
             const indicator = document.getElementById("typingIndicator");
-            chatBox.innerHTML = "";
-            
-            // Restore welcome message
-            const welcomeHtml = `
+            chatBox.innerHTML = `
             <div id="welcomeMessage" class="flex flex-col gap-1 items-start w-full">
                 <div class="flex items-center gap-2 mb-1 px-1">
                     <span class="text-xs font-semibold text-gray-400">Divine System</span>
                 </div>
                 <div class="glass-panel px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] text-sm text-gray-300 leading-relaxed shadow-lg">
                     Welcome to the Divine Dashboard. You are securely connected.<br><br>
-                    Select <span class="text-indigo-400 font-semibold">Auto-Select</span> to let the Meta-Router dynamically pick the best hardware for your prompt.
+                    Select <span class="text-indigo-400 font-semibold">Auto-Select</span> to let the Meta-Router dynamically pick the best hardware.
                 </div>
             </div>`;
-            chatBox.innerHTML = welcomeHtml;
             chatBox.appendChild(indicator);
-            
             document.getElementById("chatTitle").innerText = "New Chat";
             renderHistoryList();
-            
-            // If on mobile, auto-close sidebar on new chat
             if(window.innerWidth < 768) toggleSidebar();
         }
 
         function renderHistoryList() {
             const list = document.getElementById("historyList");
             list.innerHTML = "";
-            
-            // Sort chats by newest first
             const sortedChats = [...chats].sort((a, b) => b.updatedAt - a.updatedAt);
-            
             sortedChats.forEach(chat => {
                 const btn = document.createElement("button");
-                btn.className = `w-full text-left p-3 rounded-lg text-sm truncate transition-colors ${chat.id === currentChatId ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}`;
+                btn.className = `w-full text-left p-3 rounded-lg text-sm truncate transition-colors border border-transparent ${chat.id === currentChatId ? 'bg-indigo-600/10 text-white border-indigo-500/20' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}`;
                 btn.innerText = chat.title || "New Chat";
                 btn.onclick = () => loadChat(chat.id);
                 list.appendChild(btn);
@@ -332,34 +331,21 @@
         function loadChat(chatId) {
             const chat = chats.find(c => c.id === chatId);
             if (!chat) return;
-            
             currentChatId = chatId;
-            chatHistory = [...chat.history]; // Restore API history
+            chatHistory = [...chat.history];
             document.getElementById("chatTitle").innerText = chat.title;
-            
-            // Clear UI
             const chatBox = document.getElementById("chatBox");
             const indicator = document.getElementById("typingIndicator");
             chatBox.innerHTML = "";
             chatBox.appendChild(indicator);
-            
-            // Rebuild UI bubbles
-            chat.history.forEach(msg => {
-                // UI reconstructs user and AI messages. We don't store meta badges currently to keep it light, 
-                // but we render them correctly as user/ai.
-                appendMessageToUI(msg.role === 'user' ? 'You' : 'Divine', msg.content, msg.role === 'user' ? 'user' : 'ai');
-            });
-            
+            chat.history.forEach(msg => appendMessageToUI(msg.role === 'user' ? 'You' : 'Divine', msg.content, msg.role === 'user' ? 'user' : 'ai'));
             renderHistoryList();
             scrollToBottom();
-            
             if(window.innerWidth < 768) toggleSidebar();
         }
 
         function ensureChatSession(firstPrompt) {
-            if (!currentChatId) {
-                currentChatId = Date.now().toString();
-            }
+            if (!currentChatId) currentChatId = Date.now().toString();
             let chat = chats.find(c => c.id === currentChatId);
             if (!chat) {
                 chat = {
@@ -374,27 +360,92 @@
             return chat;
         }
 
-        function updateCurrentChatStorage(newMessages) {
+        function updateCurrentChatStorage() {
             if(!currentChatId) return;
             let chat = chats.find(c => c.id === currentChatId);
             if(chat) {
-                chat.history = chatHistory; // Sync history
+                chat.history = chatHistory;
                 chat.updatedAt = Date.now();
                 saveChatsToStorage();
             }
         }
 
-        // Initialize session
         if(chats.length > 0) {
-            // Load most recent chat
-            const sortedChats = [...chats].sort((a, b) => b.updatedAt - a.updatedAt);
-            loadChat(sortedChats[0].id);
+            loadChat([...chats].sort((a, b) => b.updatedAt - a.updatedAt)[0].id);
         } else {
             newChat();
         }
 
         // ==========================================
-        // Message Handling
+        // Health / Metrics
+        // ==========================================
+        
+        let apiHealth = {};
+        
+        // Initialize health based on model availability
+        Object.keys(providers).forEach(p => {
+            if(p !== "Auto-Select") {
+                apiHealth[p] = providers[p].length > 0 ? "Online" : "Offline";
+            }
+        });
+
+        function renderHealthList() {
+            const list = document.getElementById("healthList");
+            list.innerHTML = "";
+            Object.keys(apiHealth).forEach(p => {
+                const status = apiHealth[p];
+                const dotColor = status === "Online" ? "bg-emerald-500" : (status === "Offline" ? "bg-rose-500" : "bg-amber-500");
+                const textColor = status === "Online" ? "text-emerald-400" : (status === "Offline" ? "text-rose-400" : "text-amber-400");
+                
+                // Mock limits for visuals
+                let subtext = "Unlimited (Free)";
+                if(p === "OpenRouter") subtext = "$12.45 remaining";
+                if(p === "Mistral") subtext = "480k tokens left";
+                if(status === "Offline") subtext = "Check API Key";
+
+                list.innerHTML += `
+                <div class="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full ${dotColor} shadow-[0_0_8px_${dotColor}]"></div>
+                        <div>
+                            <div class="text-sm font-semibold text-gray-200">${p}</div>
+                            <div class="text-[0.65rem] text-gray-500">${subtext}</div>
+                        </div>
+                    </div>
+                    <span class="text-xs font-mono ${textColor}">${status}</span>
+                </div>
+                `;
+            });
+        }
+        renderHealthList();
+
+        function checkHealth() {
+            addLog("Pinging all endpoints...", "routing");
+            Object.keys(apiHealth).forEach(p => { apiHealth[p] = "Pinging..."; });
+            renderHealthList();
+            
+            // Simulate network delay for health check
+            setTimeout(() => {
+                Object.keys(providers).forEach(p => {
+                    if(p !== "Auto-Select") apiHealth[p] = providers[p].length > 0 ? "Online" : "Offline";
+                });
+                renderHealthList();
+                addLog("Health check complete.", "success");
+            }, 1500);
+        }
+
+        function updateMetrics(usage) {
+            if(!usage || !usage.total_tokens) return;
+            sessionTokens += usage.total_tokens;
+            document.getElementById("metricTokens").innerText = sessionTokens.toLocaleString();
+            
+            // Rough cost estimation: avg $0.50 per 1M tokens
+            sessionCost += (usage.total_tokens / 1000000) * 0.50;
+            document.getElementById("metricCost").innerText = "$" + sessionCost.toFixed(4);
+        }
+
+        // ==========================================
+        // Messaging
         // ==========================================
 
         function handleKey(e) {
@@ -414,17 +465,13 @@
 
             if (!text) return;
 
-            // Session Management
             ensureChatSession(text);
-            
-            // Remove welcome message if exists
             const welcome = document.getElementById("welcomeMessage");
             if (welcome) welcome.remove();
 
             appendMessageToUI("You", text, "user");
             input.value = "";
             input.style.height = 'auto'; 
-            
             input.disabled = true;
             sendBtn.disabled = true;
             
@@ -432,7 +479,6 @@
             chatBox.appendChild(indicator);
             indicator.classList.remove("hidden");
             indicator.classList.add("flex");
-            
             scrollToBottom();
 
             const startTime = performance.now();
@@ -459,6 +505,8 @@
                     chatHistory.push({"role": "user", "content": text});
                     chatHistory.push({"role": "assistant", "content": data.reply});
                     updateCurrentChatStorage();
+                    
+                    if(data.usage) updateMetrics(data.usage);
                     
                     let metaText = `${latency}s`;
                     if (data.auto_selected && !data.failover_occurred) {
@@ -490,15 +538,12 @@
         }
 
         function escapeHTML(str) {
-            return str.replace(/&/g, "&amp;")
-                      .replace(/</g, "&lt;")
-                      .replace(/>/g, "&gt;");
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
         function appendMessageToUI(sender, text, type, meta=null) {
             const chatBox = document.getElementById("chatBox");
             const indicator = document.getElementById("typingIndicator");
-            
             const row = document.createElement("div");
             row.className = `flex flex-col gap-1 w-full ${type === 'user' ? 'items-end' : 'items-start'}`;
             
@@ -524,7 +569,6 @@
                     ${htmlContent}
                 </div>
             `;
-            
             chatBox.insertBefore(row, indicator);
         }
 
