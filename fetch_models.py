@@ -27,13 +27,6 @@ providers = [
         "notes": "Excellent for RAG. Generous free tier for prototyping."
     },
     {
-        "name": "Cloudflare Workers AI",
-        "url": f"https://api.cloudflare.com/client/v4/accounts/{os.environ.get('CLOUDFLARE_ACCOUNT_ID', '')}/ai/models/search",
-        "headers": {"Authorization": f"Bearer {os.environ.get('CLOUDFLARE_AI_API_KEY', '')}"},
-        "parser": lambda r: [m['name'] for m in r.json().get('result', [])],
-        "notes": "Runs on edge network. Blazing fast, free beta tier limits."
-    },
-    {
         "name": "Cerebras",
         "url": "https://api.cerebras.ai/v1/models",
         "headers": {"Authorization": f"Bearer {os.environ.get('CEREBRAS_API_KEY', '')}"},
@@ -42,10 +35,10 @@ providers = [
     },
     {
         "name": "Bazaarlink.ai",
-        "url": "https://api.bazaarlink.ai/v1/models",
-        "headers": {"Authorization": f"Bearer {os.environ.get('BAZAARLINK_API_API_KEY', '')}"},
-        "parser": lambda r: [m['id'] for m in r.json().get('data', [])],
-        "notes": "STRICT 10 RPM LIMIT. Use only as emergency fallback."
+        "url": None, # Hardcoded due to API constraints
+        "headers": {},
+        "parser": lambda r: ['auto:free'],
+        "notes": "STRICT 10 RPM LIMIT. Only 'auto:free' works (internally routes to a random model). Use only as emergency fallback."
     },
     {
         "name": "OpenRouter",
@@ -81,19 +74,25 @@ with open('D:/divine/models.txt', 'w', encoding='utf-8') as f:
         f.write(f"=================================================\n")
         
         try:
-            print(f"Fetching {p['name']}...")
-            res = requests.get(p['url'], headers=p['headers'], timeout=15)
-            if res.status_code == 200:
-                models = p['parser'](res)
+            if p['url'] is None:
+                # Handle hardcoded models like Bazaarlink
+                models = p['parser'](None)
                 f.write(f"Total Verified Models: {len(models)}\n\n")
-                
-                # Write models in a clean column format
-                models.sort()
                 for m in models:
                     f.write(f"  - {m}\n")
             else:
-                f.write(f"Error validating models. HTTP {res.status_code}\n")
-                f.write(f"Details: {res.text[:100]}\n")
+                print(f"Fetching {p['name']}...")
+                res = requests.get(p['url'], headers=p['headers'], timeout=15)
+                if res.status_code == 200:
+                    models = p['parser'](res)
+                    f.write(f"Total Verified Models: {len(models)}\n\n")
+                    
+                    models.sort()
+                    for m in models:
+                        f.write(f"  - {m}\n")
+                else:
+                    f.write(f"Error validating models. HTTP {res.status_code}\n")
+                    f.write(f"Details: {res.text[:100]}\n")
         except Exception as e:
             f.write(f"Connection failed: {str(e)}\n")
             
