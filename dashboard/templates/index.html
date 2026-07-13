@@ -1,449 +1,148 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Divine | Intelligence Engine</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-base: #060913;
-            --bg-panel: rgba(13, 17, 28, 0.65);
-            --bg-panel-hover: rgba(20, 26, 42, 0.8);
-            --border-light: rgba(255, 255, 255, 0.06);
-            --border-glow: rgba(99, 102, 241, 0.3);
-            
-            --accent-primary: #6366f1;
-            --accent-gradient: linear-gradient(135deg, #818cf8, #c084fc);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            
-            --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        gray: {
+                            850: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        }
+                    }
+                }
+            }
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+    </script>
+    <style>
+        /* Hide scrollbar for textarea and logs but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Subtle custom scrollbar for main chat area */
+        .chat-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-base);
-            background-image: 
-                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.05), transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(192, 132, 252, 0.05), transparent 40%);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            overflow: hidden;
-            font-size: 15px;
+            background-color: #030712;
+            background-image: radial-gradient(circle at top left, rgba(79, 70, 229, 0.05), transparent 40%),
+                              radial-gradient(circle at bottom right, rgba(147, 51, 234, 0.05), transparent 40%);
         }
 
-        /* Layout Grid */
-        .app-container {
-            display: flex;
-            width: 100%;
-            height: 100%;
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* Sidebar - Logs */
-        .sidebar {
-            width: 320px;
-            background: rgba(9, 12, 21, 0.8);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid var(--border-light);
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-            z-index: 20;
-        }
-
-        .sidebar.closed {
-            transform: translateX(-100%);
-            position: absolute;
-            height: 100%;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .sidebar-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-light);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .sidebar-title {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--text-muted);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .log-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-        }
-
-        .log-container::-webkit-scrollbar { width: 4px; }
-        .log-container::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
-
-        .log-entry {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            padding: 0.8rem;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-light);
-            word-wrap: break-word;
-            animation: slideIn 0.3s ease-out forwards;
-        }
-
-        .log-entry.info { color: #818cf8; border-left: 2px solid #818cf8; }
-        .log-entry.success { color: #34d399; border-left: 2px solid #34d399; }
-        .log-entry.error { color: #fb7185; border-left: 2px solid #fb7185; }
-        .log-entry.routing { color: #fbbf24; border-left: 2px solid #fbbf24; }
-
-        /* Main Area */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            background: transparent;
-        }
-
-        /* Topbar */
-        .topbar {
-            height: 70px;
-            padding: 0 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--bg-panel);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-light);
-            z-index: 10;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .btn-icon {
-            background: transparent;
-            border: 1px solid var(--border-light);
-            color: var(--text-muted);
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-            color: var(--text-main);
-            background: rgba(255,255,255,0.05);
-            border-color: var(--text-muted);
-        }
-
-        .brand-name {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 800;
-            font-size: 1.5rem;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        .selectors {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        select {
-            appearance: none;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border-light);
-            color: var(--text-main);
-            padding: 0.5rem 1rem 0.5rem 1rem;
-            border-radius: 8px;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 500;
-            outline: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        select:hover, select:focus {
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 12px var(--border-glow);
-        }
-
-        /* Chat Area */
-        .chat-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            scroll-behavior: smooth;
-        }
-
-        .chat-area::-webkit-scrollbar { width: 6px; }
-        .chat-area::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 6px; }
-
-        .message-row {
-            display: flex;
-            width: 100%;
-            animation: fadeIn 0.4s ease-out forwards;
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-
-        .message-row.user { justify-content: flex-end; }
-        .message-row.ai { justify-content: flex-start; }
-
-        .bubble {
-            max-width: 75%;
-            padding: 1.25rem 1.5rem;
-            border-radius: 16px;
-            line-height: 1.6;
-            position: relative;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .message-row.user .bubble {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-bottom-right-radius: 4px;
-        }
-
-        .message-row.ai .bubble {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-light);
-            border-bottom-left-radius: 4px;
-            backdrop-filter: blur(10px);
-        }
-
-        .bubble-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.8rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .message-row.user .bubble-header { color: #a5b4fc; }
-        .message-row.ai .bubble-header { color: #f8fafc; }
-
-        .badge {
-            background: rgba(99, 102, 241, 0.2);
-            color: #c7d2fe;
-            padding: 0.2rem 0.6rem;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            border: 1px solid rgba(99, 102, 241, 0.3);
-        }
-
-        .content pre {
-            background: #000;
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 1rem 0;
-            border: 1px solid var(--border-light);
-        }
-
-        .content code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85em;
-            color: #e2e8f0;
-        }
-
-        /* Input Area */
-        .input-area {
-            padding: 1.5rem 2rem;
-            background: transparent;
-            position: relative;
-        }
-
-        .input-box {
-            max-width: 900px;
-            margin: 0 auto;
-            background: var(--bg-panel);
-            border: 1px solid var(--border-light);
-            border-radius: 16px;
-            padding: 0.5rem;
-            display: flex;
-            align-items: flex-end;
-            backdrop-filter: blur(16px);
-            box-shadow: var(--shadow-glow);
-            transition: border-color 0.3s;
-        }
-
-        .input-box:focus-within {
-            border-color: var(--accent-primary);
-        }
-
-        textarea {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 1rem;
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-            resize: none;
-            max-height: 150px;
-            height: 52px;
-            outline: none;
-            line-height: 1.5;
-        }
-
-        textarea::placeholder { color: var(--text-muted); }
-
-        .btn-send {
-            background: var(--accent-gradient);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin: 0.25rem;
-        }
-
-        .btn-send:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px var(--border-glow);
-        }
-
-        .btn-send:disabled {
-            background: #334155;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        /* Icons */
-        svg { width: 18px; height: 18px; fill: currentColor; }
-
-        /* Loader */
-        .typing-indicator {
-            display: none;
-            padding: 1rem;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-style: italic;
-        }
-        .typing-indicator span {
+        /* Typing dot animation */
+        .dot {
             animation: blink 1.4s infinite both;
             height: 4px; width: 4px; background: currentColor;
-            border-radius: 50%; display: inline-block; margin: 0 1px;
+            border-radius: 50%; display: inline-block; margin: 0 2px;
         }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
-
     </style>
 </head>
-<body>
+<body class="text-gray-100 h-screen w-screen overflow-hidden flex antialiased">
 
-    <div class="app-container">
-        <!-- Collapsible Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <span class="sidebar-title">Engine Logs</span>
-                <button class="btn-icon" onclick="toggleSidebar()" title="Close Logs">
-                    <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+    <!-- Collapsible Sidebar (Simplified Logs) -->
+    <aside id="sidebar" class="w-80 h-full glass-panel border-r border-white/5 flex flex-col transition-all duration-300 relative z-20">
+        <div class="p-4 border-b border-white/5 flex justify-between items-center">
+            <span class="text-xs font-semibold text-gray-400 tracking-widest uppercase">System Logs</span>
+            <button onclick="toggleSidebar()" class="text-gray-500 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </button>
+        </div>
+        <div id="logBox" class="flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col gap-1 text-[0.7rem] font-mono">
+            <div class="text-indigo-400">[*] Divine Engine initialized. Verified endpoints loaded.</div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col h-full relative">
+        
+        <!-- Header -->
+        <header class="h-16 glass-panel border-b border-white/5 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center gap-4">
+                <button id="sidebarToggleBtn" onclick="toggleSidebar()" class="hidden text-gray-500 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 class="text-lg font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">DIVINE ⚡</h1>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <select id="providerSelect" onchange="updateModels()" class="bg-gray-900/50 border border-white/10 text-gray-300 text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none">
+                    {% for provider in providers.keys() %}
+                        <option value="{{ provider }}">{{ provider }}</option>
+                    {% endfor %}
+                </select>
+                <select id="modelSelect" class="bg-gray-900/50 border border-white/10 text-gray-300 text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none max-w-[200px] truncate">
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+        </header>
+
+        <!-- Chat History -->
+        <main id="chatBox" class="flex-1 overflow-y-auto chat-scroll p-6 flex flex-col gap-6">
+            <!-- Initial Message -->
+            <div class="flex flex-col gap-1 items-start w-full">
+                <div class="flex items-center gap-2 mb-1 px-1">
+                    <span class="text-xs font-semibold text-gray-400">Divine System</span>
+                </div>
+                <div class="glass-panel px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] text-sm text-gray-300 leading-relaxed shadow-lg">
+                    Welcome to the Divine Dashboard. You are securely connected.<br><br>
+                    Select <span class="text-indigo-400 font-semibold">Auto-Select</span> to let the Meta-Router dynamically pick the best hardware for your prompt.
+                </div>
+            </div>
+            
+            <!-- Typing Indicator -->
+            <div id="typingIndicator" class="hidden flex-col gap-1 items-start w-full">
+                <div class="glass-panel px-5 py-3 rounded-2xl rounded-tl-sm text-sm text-gray-400 italic flex items-center">
+                    Processing <span class="ml-2 flex"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Box -->
+        <div class="p-6 pt-2 bg-gradient-to-t from-gray-950 to-transparent">
+            <div class="max-w-4xl mx-auto relative glass-panel rounded-2xl p-2 flex items-end shadow-2xl focus-within:border-indigo-500/50 transition-colors">
+                <textarea id="userInput" 
+                          rows="1"
+                          class="w-full bg-transparent border-none text-gray-200 text-sm p-3 outline-none resize-none no-scrollbar max-h-32" 
+                          placeholder="Command Divine... (Shift+Enter for newline)"
+                          onkeydown="handleKey(event)" 
+                          oninput="autoResize(this)"></textarea>
+                <button id="sendBtn" onclick="sendMessage()" class="p-3 m-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
-            <div class="log-container" id="logBox">
-                <div class="log-entry info">System: Divine Engine initialized. Verified endpoints loaded.</div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Header -->
-            <header class="topbar">
-                <div class="brand">
-                    <button class="btn-icon" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Open Logs" style="display: none;">
-                        <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-                    </button>
-                    <div class="brand-name">DIVINE</div>
-                </div>
-                
-                <div class="selectors">
-                    <select id="providerSelect" onchange="updateModels()">
-                        {% for provider in providers.keys() %}
-                            <option value="{{ provider }}">{{ provider }}</option>
-                        {% endfor %}
-                    </select>
-                    <select id="modelSelect">
-                        <!-- Populated via JS -->
-                    </select>
-                </div>
-            </header>
-
-            <!-- Chat Display -->
-            <main class="chat-area" id="chatBox">
-                <div class="message-row ai">
-                    <div class="bubble">
-                        <div class="bubble-header">
-                            <span>Divine System</span>
-                        </div>
-                        <div class="content">
-                            Welcome to the Divine Dashboard. You are securely connected to the Omni-Route proxy.<br><br>
-                            Select <b>Auto-Select</b> to let the Meta-Router dynamically pick the best hardware for your prompt, or manually override using the dropdowns above.
-                        </div>
-                    </div>
-                </div>
-                <div id="typingIndicator" class="typing-indicator">
-                    Processing <span></span><span></span><span></span>
-                </div>
-            </main>
-
-            <!-- Input Display -->
-            <div class="input-area">
-                <div class="input-box">
-                    <textarea id="userInput" placeholder="Command Divine... (Shift+Enter for newline)" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-                    <button class="btn-send" id="sendBtn" onclick="sendMessage()">
-                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </button>
-                </div>
-            </div>
         </div>
+        
     </div>
 
     <script>
@@ -451,35 +150,41 @@
         let chatHistory = [];
         let sidebarOpen = true;
 
-        // Auto resize textarea
+        // Auto resize textarea without scrollbars
         function autoResize(el) {
-            el.style.height = '52px';
-            el.style.height = Math.min(el.scrollHeight, 150) + 'px';
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 128) + 'px'; // 128px is roughly 5-6 lines
         }
 
-        // Toggle Sidebar
         function toggleSidebar() {
             const sidebar = document.getElementById("sidebar");
             const toggleBtn = document.getElementById("sidebarToggleBtn");
             if (sidebarOpen) {
-                sidebar.classList.add("closed");
-                toggleBtn.style.display = "flex";
+                sidebar.style.marginLeft = "-320px";
+                sidebar.style.opacity = "0";
+                toggleBtn.classList.remove("hidden");
                 sidebarOpen = false;
             } else {
-                sidebar.classList.remove("closed");
-                toggleBtn.style.display = "none";
+                sidebar.style.marginLeft = "0";
+                sidebar.style.opacity = "1";
+                toggleBtn.classList.add("hidden");
                 sidebarOpen = true;
             }
         }
 
-        // Add Log Entry
+        // Add plain text log entry
         function addLog(message, type="info") {
             const logBox = document.getElementById("logBox");
             const entry = document.createElement("div");
-            entry.className = `log-entry ${type}`;
             
-            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: 'numeric', minute: 'numeric', second: 'numeric' });
-            entry.innerText = `[${time}] ${message}`;
+            // Minimalist colors
+            let colorClass = "text-gray-400";
+            if(type === "success") colorClass = "text-emerald-400";
+            if(type === "error") colorClass = "text-rose-400";
+            if(type === "routing") colorClass = "text-amber-400";
+
+            entry.className = `${colorClass}`;
+            entry.innerText = `> ${message}`;
             
             logBox.appendChild(entry);
             logBox.scrollTop = logBox.scrollHeight;
@@ -497,7 +202,7 @@
                     opt.innerText = model;
                     modelSelect.appendChild(opt);
                 });
-                addLog(`Switched target context to: ${provider}`, "info");
+                addLog(`Context: ${provider}`, "info");
             }
         }
 
@@ -520,21 +225,26 @@
 
             if (!text) return;
 
-            // Render User Message
-            appendMessage("You", text, "user", null);
+            appendMessage("You", text, "user");
             input.value = "";
-            input.style.height = '52px';
+            input.style.height = 'auto'; // Reset height
             
             input.disabled = true;
             sendBtn.disabled = true;
-            indicator.style.display = "block";
+            
+            // Move indicator to bottom
+            const chatBox = document.getElementById("chatBox");
+            chatBox.appendChild(indicator);
+            indicator.classList.remove("hidden");
+            indicator.classList.add("flex");
+            
             scrollToBottom();
 
             const startTime = performance.now();
             if(provider === "Auto-Select") {
-                addLog(`Engaging Meta-Router for prompt analysis...`, "routing");
+                addLog(`Analyzing prompt via Meta-Router...`, "routing");
             } else {
-                addLog(`Dispatching to ${provider} via ${model}...`, "info");
+                addLog(`Req: ${provider}/${model}`, "info");
             }
 
             try {
@@ -545,31 +255,32 @@
                 });
 
                 const data = await response.json();
-                const endTime = performance.now();
-                const latency = ((endTime - startTime) / 1000).toFixed(2);
+                const latency = ((performance.now() - startTime) / 1000).toFixed(2);
                 
-                indicator.style.display = "none";
+                indicator.classList.add("hidden");
+                indicator.classList.remove("flex");
 
                 if (data.success) {
                     chatHistory.push({"role": "user", "content": text});
                     chatHistory.push({"role": "assistant", "content": data.reply});
                     
-                    let metaText = `⚡ ${latency}s`;
+                    let metaText = `${latency}s`;
                     if (data.auto_selected) {
-                        metaText += ` • Auto-Routed: ${data.provider_used} (${data.model_used})`;
-                        addLog(`Meta-Router Decision: ${data.provider_used} -> ${data.model_used}`, "success");
+                        metaText += ` • ${data.provider_used} (${data.model_used})`;
+                        addLog(`Routed: ${data.provider_used} -> ${data.model_used}`, "success");
                     }
                     
-                    addLog(`Received 200 OK from ${data.provider_used} in ${latency}s`, "success");
+                    addLog(`Res: 200 OK (${latency}s)`, "success");
                     appendMessage("Divine", data.reply, "ai", metaText);
                 } else {
-                    addLog(`API Error from ${provider}: ${data.error}`, "error");
+                    addLog(`Err: ${data.error}`, "error");
                     appendMessage("System Error", data.error, "ai", "Failure");
                 }
             } catch (err) {
-                indicator.style.display = "none";
-                addLog(`Network Error: ${err.message}`, "error");
-                appendMessage("System Error", "Failed to connect to Divine backend.", "ai", "Error");
+                indicator.classList.add("hidden");
+                indicator.classList.remove("flex");
+                addLog(`Net Err: ${err.message}`, "error");
+                appendMessage("System Error", "Connection failed.", "ai", "Error");
             }
 
             input.disabled = false;
@@ -578,25 +289,30 @@
             scrollToBottom();
         }
 
-        function appendMessage(sender, text, type, meta) {
+        function appendMessage(sender, text, type, meta=null) {
             const chatBox = document.getElementById("chatBox");
             const indicator = document.getElementById("typingIndicator");
             
             const row = document.createElement("div");
-            row.className = `message-row ${type}`;
+            row.className = `flex flex-col gap-1 w-full ${type === 'user' ? 'items-end' : 'items-start'}`;
             
-            let formattedText = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            // Format text
+            let formattedText = text.replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-950 p-4 rounded-xl border border-white/5 my-2 overflow-x-auto text-xs font-mono text-gray-300"><code>$1</code></pre>');
             formattedText = formattedText.replace(/\n/g, '<br>');
 
-            let badgeHtml = meta ? `<div class="badge">${meta}</div>` : '';
+            let metaHtml = meta ? `<span class="ml-2 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[0.65rem]">${meta}</span>` : '';
             
+            let bubbleColor = type === 'user' 
+                ? 'bg-indigo-600/20 border-indigo-500/30 text-indigo-50 rounded-tr-sm' 
+                : 'glass-panel text-gray-200 rounded-tl-sm';
+
             row.innerHTML = `
-                <div class="bubble">
-                    <div class="bubble-header">
-                        <span>${sender}</span>
-                        ${badgeHtml}
-                    </div>
-                    <div class="content">${formattedText}</div>
+                <div class="flex items-center gap-2 mb-1 px-1">
+                    <span class="text-xs font-semibold ${type === 'user' ? 'text-indigo-300' : 'text-gray-400'}">${sender}</span>
+                    ${metaHtml}
+                </div>
+                <div class="px-5 py-3.5 rounded-2xl max-w-[85%] text-sm leading-relaxed border ${bubbleColor} no-scrollbar overflow-hidden">
+                    ${formattedText}
                 </div>
             `;
             
