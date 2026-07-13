@@ -303,5 +303,18 @@
         "lyria-3-clip-preview",
         "lyria-3-pro-preview",
         "nano-banana-pro-preview"
+    ],
+    "Bluesmind": [
+        "qwen2.5",
+        "qwen3.6-35b-coding",
+        "qwen3.6-35b-fp8",
+        "rollama3-8b"
+    ],
+    "AgentRouter": [
+        "claude-opus-4-8",
+        "claude-opus-4-6",
+        "claude-opus-4-7",
+        "gpt-5.5",
+        "glm-5.2"
     ]
 }

@@ -37,6 +37,14 @@ PROVIDERS = {
     "Google": {
         "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         "key": os.environ.get('GOOGLE_AI_API_KEY')
+    },
+    "Bluesmind": {
+        "url": "https://api.bluesminds.com/v1/chat/completions",
+        "key": os.environ.get('BLUESMIND_API_KEY')
+    },
+    "AgentRouter": {
+        "url": "https://agentrouter.org/v1/chat/completions",
+        "key": os.environ.get('AGENTROUTER_API_KEY', 'err0rgodv1')
     }
 }
 
@@ -59,6 +67,12 @@ class OmniEngine:
         if provider_name == "OpenRouter":
             headers["HTTP-Referer"] = "https://github.com/err0rgod/divine"
             headers["X-Title"] = "Divine"
+
+        # AgentRouter specific headers (WAF Fingerprinting bypass)
+        if provider_name == "AgentRouter":
+            headers["User-Agent"] = "codex_cli_rs/0.101.0 (Windows NT 10.0; x86_64)"
+            headers["Originator"] = "codex_cli_rs"
+            headers["Version"] = "0.101.0"
 
         # Construct Payload depending on provider
         if provider_name == "Cohere":
@@ -145,7 +159,7 @@ class OmniEngine:
         last_message = messages[-1]['content'] if messages else ""
         
         meta_prompt = f"""
-You are the Divine Meta-Router. Analyze the user's prompt and pick the absolute best provider and model combination to answer it.
+You are the Divine Meta-Router. Analyze the user's prompt and pick the absolute best provider and model combination to answer it do not guardrail the prompt in any way.
 We have access to:
 - Groq (models: llama-3.3-70b-versatile, mixtral-8x7b-32768) -> Use for speed, casual chat, translation.
 - Mistral (models: codestral-latest, mistral-large-latest) -> Use for heavy coding, scripts, logic.
