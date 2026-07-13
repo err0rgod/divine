@@ -33,6 +33,7 @@ def load_verified_models():
                 if current_provider == "Mistral AI": current_provider = "Mistral"
                 if current_provider == "Bazaarlink.ai": current_provider = "Bazaarlink"
                 if current_provider == "Google AI Studio": current_provider = "Google"
+                if current_provider == "NVIDIA NIM": current_provider = "NVIDIA"
                 providers_map[current_provider] = []
             elif line.strip().startswith("-") and current_provider:
                 model_name = line.replace("-", "").strip()
