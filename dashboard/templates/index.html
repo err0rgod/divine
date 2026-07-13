@@ -168,7 +168,7 @@
     </div>
 
     <script>
-        marked.setOptions({ highlight: function(code, lang) { const language = hljs.getLanguage(lang) ? lang : 'plaintext'; return hljs.highlight(code, { language }).value; }, langPrefix: 'hljs language-' });
+        // Removed deprecated marked.setOptions. Highlighting is applied manually below.
         if (localStorage.theme === 'light') { document.documentElement.classList.remove('dark'); document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css"; } else { document.documentElement.classList.add('dark'); document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"; }
         function toggleTheme() { if (document.documentElement.classList.contains('dark')) { document.documentElement.classList.remove('dark'); localStorage.theme = 'light'; document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css"; } else { document.documentElement.classList.add('dark'); localStorage.theme = 'dark'; document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"; } }
 
@@ -312,6 +312,9 @@
             chatBox.appendChild(row);
             
             if (type !== 'user') {
+                row.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
                 row.querySelectorAll('pre').forEach(pre => {
                     const btn = document.createElement('button'); btn.className = 'copy-btn'; btn.innerText = 'Copy';
                     btn.onclick = () => { navigator.clipboard.writeText(pre.querySelector('code').innerText); btn.innerText = 'Copied!'; setTimeout(() => btn.innerText = 'Copy', 2000); };
