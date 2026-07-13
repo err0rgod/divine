@@ -19,29 +19,20 @@ class ChatRequest(BaseModel):
     prompt: str
     history: List[dict]
 
+import json
+
 def load_verified_models():
-    """Dynamically parses models.txt to ensure only verified, online models are selectable."""
-    providers_map = {"Auto-Select": ["Divine (Meta-Router)"]}
+    """Dynamically parses models.json to ensure only verified, online models are selectable."""
     try:
-        with open("models.txt", "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        
-        current_provider = None
-        for line in lines:
-            if line.startswith("PROVIDER:"):
-                current_provider = line.split("PROVIDER:")[1].strip()
-                if current_provider == "Mistral AI": current_provider = "Mistral"
-                if current_provider == "Bazaarlink.ai": current_provider = "Bazaarlink"
-                if current_provider == "Google AI Studio": current_provider = "Google"
-                if current_provider == "NVIDIA NIM": current_provider = "NVIDIA"
-                providers_map[current_provider] = []
-            elif line.strip().startswith("-") and current_provider:
-                model_name = line.replace("-", "").strip()
-                providers_map[current_provider].append(model_name)
+        with open("models.json", "r", encoding="utf-8") as f:
+            providers_map = json.load(f)
     except Exception as e:
-        print(f"Error loading models.txt: {e}")
+        print(f"Error loading models.json: {e}")
         # Ultimate fallback
-        providers_map["Mistral"] = ["codestral-latest", "mistral-large-latest"]
+        providers_map = {
+            "Auto-Select": ["Divine (Meta-Router)"],
+            "Mistral": ["codestral-latest", "mistral-large-latest"]
+        }
         
     return providers_map
 
