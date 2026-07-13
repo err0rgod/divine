@@ -1,0 +1,14 @@
+{
+    "provider": "agentrouter",
+    "model": "claude-opus-4-8",
+    "agentrouter": {
+        "url": "https://agentrouter.org/v1",
+        "key": "sk-q8fB6Ufp6kyyMs27WtsEFUcYf3I1OTRkCbS5QTNbwkhfQ69G",
+        "headers": {
+            "User-Agent": "codex_cli_rs/0.101.0 (Windows NT 10.0; x86_64)",
+            "Originator": "codex_cli_rs",
+            "Version": "0.101.0",
+            "anthropic-version": "2023-06-01"
+        }
+    }
+}

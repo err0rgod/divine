@@ -1,6 +1,24 @@
 """
-Agent Router - Claude Opus 4.8 Client
-Uses the OpenAI-compatible API with required client fingerprint headers.
+Agent Router API Client & Provider Documentation
+
+PROVIDER INFO:
+- URL: https://agentrouter.org/v1
+- Endpoint Style: OpenAI format (/chat/completions) and Anthropic format (/messages)
+- WAF/Protection: STRICT. Requires specific client fingerprinting headers to avoid 'unauthorized_client_error'.
+  Required Headers:
+    - User-Agent: codex_cli_rs/0.101.0 (Windows NT 10.0; x86_64)
+    - Originator: codex_cli_rs
+    - Version: 0.101.0
+
+AVAILABLE MODELS:
+1. 'claude-opus-4-8' - Anthropic's Opus 4.8. (Heavy reasoning / architecture).
+2. 'claude-opus-4-6' - Anthropic's Opus 4.6.
+3. 'claude-opus-4-7' - Anthropic's Opus 4.7.
+4. 'gpt-5.5' - OpenAI model alias.
+5. 'glm-5.2' - ChatGLM alias.
+
+Note: AgentRouter is our primary heavyweight model provider. Because of the WAF fingerprinting, 
+we use the proxy.py script to bridge Claude Code CLI to this provider seamlessly.
 """
 
 import requests
@@ -8,7 +26,7 @@ import json
 import sys
 
 
-API_KEY = "sk-q8fB6Ufp6kyyMs27WtsEFUcYf3I1OTRkCbS5QTNbwkhfQ69G"
+API_KEY = ""
 BASE_URL = "https://agentrouter.org/v1"
 MODEL = "claude-opus-4-8"
 
