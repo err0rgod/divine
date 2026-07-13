@@ -52,7 +52,8 @@ async def get_providers():
 
 @app.post("/api/chat")
 async def process_chat(req: ChatRequest):
-    messages = req.history.copy()
+    # Clean up history to ensure only 'role' and 'content' are sent to the API
+    messages = [{"role": msg["role"], "content": msg["content"]} for msg in req.history]
     messages.append({"role": "user", "content": req.prompt})
 
     provider = req.provider
@@ -84,29 +85,57 @@ async def process_chat(req: ChatRequest):
         }
 
 CONTEXT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "context")
-CHATS_FILE = os.path.join(CONTEXT_DIR, "chats.json")
-os.makedirs(CONTEXT_DIR, exist_ok=True)
+CHATS_DIR = os.path.join(CONTEXT_DIR, "chats")
+os.makedirs(CHATS_DIR, exist_ok=True)
+
+# Legacy migration
+legacy_file = os.path.join(CONTEXT_DIR, "chats.json")
+if os.path.exists(legacy_file):
+    try:
+        with open(legacy_file, "r", encoding="utf-8") as f:
+            legacy_chats = json.load(f)
+        for chat in legacy_chats:
+            chat_id = chat.get("id")
+            if chat_id:
+                with open(os.path.join(CHATS_DIR, f"{chat_id}.json"), "w", encoding="utf-8") as f2:
+                    json.dump(chat, f2, indent=4)
+        os.remove(legacy_file)
+    except Exception as e:
+        print(f"Migration error: {e}")
 
 @app.get("/api/history")
 async def get_history():
-    if not os.path.exists(CHATS_FILE):
-        return JSONResponse(content=[])
+    chats = []
     try:
-        with open(CHATS_FILE, "r", encoding="utf-8") as f:
-            return JSONResponse(content=json.load(f))
+        for filename in os.listdir(CHATS_DIR):
+            if filename.endswith(".json"):
+                with open(os.path.join(CHATS_DIR, filename), "r", encoding="utf-8") as f:
+                    chats.append(json.load(f))
     except Exception as e:
         print(f"Error loading chats: {e}")
-        return JSONResponse(content=[])
+    return JSONResponse(content=chats)
 
-@app.post("/api/history")
-async def save_history(req: Request):
+@app.post("/api/history/{chat_id}")
+async def save_history(chat_id: str, req: Request):
     try:
-        chats_data = await req.json()
-        with open(CHATS_FILE, "w", encoding="utf-8") as f:
-            json.dump(chats_data, f, indent=4)
+        chat_data = await req.json()
+        filepath = os.path.join(CHATS_DIR, f"{chat_id}.json")
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(chat_data, f, indent=4)
         return {"success": True}
     except Exception as e:
-        print(f"Error saving chats: {e}")
+        print(f"Error saving chat {chat_id}: {e}")
+        return {"success": False, "error": str(e)}
+
+@app.delete("/api/history/{chat_id}")
+async def delete_history(chat_id: str):
+    try:
+        filepath = os.path.join(CHATS_DIR, f"{chat_id}.json")
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        return {"success": True}
+    except Exception as e:
+        print(f"Error deleting chat {chat_id}: {e}")
         return {"success": False, "error": str(e)}
 
 if __name__ == "__main__":

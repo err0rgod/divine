@@ -147,9 +147,8 @@ class OmniEngine:
         meta_prompt = f"""
 You are the Divine Meta-Router. Analyze the user's prompt and pick the absolute best provider and model combination to answer it.
 We have access to:
-- Groq (models: llama-3.1-8b-instant, llama-3.3-70b-versatile, mixtral-8x7b-32768) -> Use for speed, casual chat, translation.
+- Groq (models: llama-3.3-70b-versatile, mixtral-8x7b-32768) -> Use for speed, casual chat, translation.
 - Mistral (models: codestral-latest, mistral-large-latest) -> Use for heavy coding, scripts, logic.
-- Cerebras (models: llama3.1-8b) -> Use for extremely fast answers.
 - NVIDIA (models: meta/llama-3.1-70b-instruct) -> Use for heavy reasoning.
 - Cohere (models: command-r-plus-08-2024) -> Use for RAG, text summarization, data extraction.
 
