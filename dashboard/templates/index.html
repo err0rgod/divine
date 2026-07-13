@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omni-Route Intelligence Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --glass-bg: rgba(20, 25, 40, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --user-msg: rgba(99, 102, 241, 0.15);
+            --ai-msg: rgba(30, 41, 59, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.08), transparent 25%);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        select {
+            appearance: none;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, select:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* Main Chat Area */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            scroll-behavior: smooth;
+        }
+
+        main::-webkit-scrollbar {
+            width: 8px;
+        }
+        main::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 4px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1.2rem;
+            border-radius: 12px;
+            line-height: 1.6;
+            position: relative;
+            animation: fadeIn 0.4s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-msg);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background: var(--ai-msg);
+            border: 1px solid var(--glass-border);
+            border-bottom-left-radius: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        .msg-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .meta-tag {
+            background: rgba(0,0,0,0.3);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            color: #818cf8;
+            font-weight: 600;
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 1.5rem 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .input-wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            gap: 1rem;
+            position: relative;
+        }
+
+        textarea {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            resize: none;
+            height: 60px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px var(--accent-glow);
+        }
+
+        button:disabled {
+            background: #334155;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        pre {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--glass-border);
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            color: #e2e8f0;
+        }
+
+        /* Loading indicator */
+        .typing {
+            display: none;
+            align-self: flex-start;
+            padding: 1rem;
+            color: var(--text-muted);
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">OMNI-ROUTE ⚡</div>
+        <div class="controls">
+            <select id="providerSelect" onchange="updateModels()">
+                {% for provider in providers.keys() %}
+                    <option value="{{ provider }}">{{ provider }}</option>
+                {% endfor %}
+            </select>
+            <select id="modelSelect">
+                <!-- Populated via JS -->
+            </select>
+        </div>
+    </header>
+
+    <main id="chatBox">
+        <div class="message ai">
+            <div class="msg-meta">System</div>
+            Welcome to the Omni-Route Dashboard. You are connected to 730+ verified endpoints.
+            Select "Auto-Select" to let the Meta-Router automatically route your prompt to the best hardware, or manually select an engine above.
+        </div>
+        <div id="typingIndicator" class="typing">Meta-Router is processing...</div>
+    </main>
+
+    <div class="input-container">
+        <div class="input-wrapper">
+            <textarea id="userInput" placeholder="Ask Omni-Route anything... (Press Enter to send)" onkeydown="if(event.key === 'Enter' && !event.shiftKey){ event.preventDefault(); sendMessage(); }"></textarea>
+            <button id="sendBtn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const providers = {{ providers | tojson }};
+        let chatHistory = [];
+
+        function updateModels() {
+            const provider = document.getElementById("providerSelect").value;
+            const modelSelect = document.getElementById("modelSelect");
+            modelSelect.innerHTML = "";
+            
+            providers[provider].forEach(model => {
+                const opt = document.createElement("option");
+                opt.value = model;
+                opt.innerText = model;
+                modelSelect.appendChild(opt);
+            });
+        }
+
+        // Initialize models on load
+        updateModels();
+
+        async function sendMessage() {
+            const input = document.getElementById("userInput");
+            const text = input.value.trim();
+            const provider = document.getElementById("providerSelect").value;
+            const model = document.getElementById("modelSelect").value;
+            const sendBtn = document.getElementById("sendBtn");
+
+            if (!text) return;
+
+            // Render User Message
+            appendMessage("You", text, "user", "");
+            input.value = "";
+            
+            // Disable UI
+            input.disabled = true;
+            sendBtn.disabled = true;
+            document.getElementById("typingIndicator").style.display = "block";
+            scrollToBottom();
+
+            try {
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        provider: provider,
+                        model: model,
+                        prompt: text,
+                        history: chatHistory
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById("typingIndicator").style.display = "none";
+
+                if (data.success) {
+                    chatHistory.push({"role": "user", "content": text});
+                    chatHistory.push({"role": "assistant", "content": data.reply});
+                    
+                    let metaText = `Routed via: ${data.provider_used} (${data.model_used})`;
+                    if (data.auto_selected) metaText = "⚡ Auto-Routed via: " + data.provider_used + " (" + data.model_used + ")";
+                    
+                    appendMessage("Omni-Route", data.reply, "ai", metaText);
+                } else {
+                    appendMessage("System Error", data.error, "ai", "Error");
+                }
+            } catch (err) {
+                document.getElementById("typingIndicator").style.display = "none";
+                appendMessage("System Error", "Failed to connect to backend engine.", "ai", "Error");
+            }
+
+            // Enable UI
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
+            scrollToBottom();
+        }
+
+        function appendMessage(sender, text, type, meta) {
+            const chatBox = document.getElementById("chatBox");
+            const indicator = document.getElementById("typingIndicator");
+            
+            const div = document.createElement("div");
+            div.className = `message ${type}`;
+            
+            // Simple markdown handling for code blocks
+            let formattedText = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            formattedText = formattedText.replace(/\n/g, '<br>');
+
+            let metaHtml = meta ? `<span class="meta-tag">${meta}</span>` : '';
+            
+            div.innerHTML = `
+                <div class="msg-meta">
+                    <span>${sender}</span>
+                    ${metaHtml}
+                </div>
+                <div>${formattedText}</div>
+            `;
+            
+            chatBox.insertBefore(div, indicator);
+        }
+
+        function scrollToBottom() {
+            const chatBox = document.getElementById("chatBox");
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
