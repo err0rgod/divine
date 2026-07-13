@@ -43,9 +43,9 @@ def test_chat_endpoint_mocked(mocker):
     # Define what the mocked engine should return
     mock_chat.return_value = {
         "success": True,
-        "reply": "Mocked response from Divine Engine",
-        "model_used": "mock-model-7b",
-        "provider_used": "MockProvider",
+        "content": "Mocked response from Divine Engine",
+        "model": "mock-model-7b",
+        "provider": "MockProvider",
         "failover_occurred": False,
         "original_provider": None,
         "usage": {"total_tokens": 100}
