@@ -35,8 +35,8 @@
             display: none;
         }
         .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
         
         /* Subtle custom scrollbar for main chat area */
@@ -69,19 +69,62 @@
         .dot:nth-child(2) { animation-delay: 0.2s; }
         .dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
+
+        /* Sidebar Tabs */
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #818cf8;
+            border-bottom-color: #818cf8;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: flex;
+        }
     </style>
 </head>
 <body class="text-gray-100 h-screen w-screen overflow-hidden flex antialiased">
 
-    <!-- Collapsible Sidebar (Simplified Logs) -->
+    <!-- Collapsible Sidebar -->
     <aside id="sidebar" class="w-80 h-full glass-panel border-r border-white/5 flex flex-col transition-all duration-300 relative z-20">
-        <div class="p-4 border-b border-white/5 flex justify-between items-center">
-            <span class="text-xs font-semibold text-gray-400 tracking-widest uppercase">System Logs</span>
-            <button onclick="toggleSidebar()" class="text-gray-500 hover:text-white transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-            </button>
+        <!-- Sidebar Header & Tabs -->
+        <div class="flex flex-col border-b border-white/5">
+            <div class="p-4 pb-2 flex justify-between items-center">
+                <span class="text-sm font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">DIVINE PANEL</span>
+                <button onclick="toggleSidebar()" class="text-gray-500 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+            </div>
+            <div class="flex px-2">
+                <button id="tabBtnHistory" onclick="switchTab('history')" class="tab-btn active w-1/2">History</button>
+                <button id="tabBtnLogs" onclick="switchTab('logs')" class="tab-btn w-1/2">Logs</button>
+            </div>
         </div>
-        <div id="logBox" class="flex-1 overflow-y-auto no-scrollbar p-4 flex flex-col gap-1 text-[0.7rem] font-mono">
+
+        <!-- History Tab Content -->
+        <div id="tabContentHistory" class="tab-content active flex-1 flex-col overflow-y-auto no-scrollbar p-2 gap-1">
+            <button onclick="newChat()" class="w-full flex items-center gap-2 p-3 mb-2 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/20 transition-colors text-sm font-semibold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                New Chat
+            </button>
+            <div id="historyList" class="flex flex-col gap-1 w-full">
+                <!-- Chat items populated by JS -->
+            </div>
+        </div>
+
+        <!-- Logs Tab Content -->
+        <div id="tabContentLogs" class="tab-content flex-1 flex-col overflow-y-auto no-scrollbar p-4 text-[0.7rem] font-mono gap-1">
             <div class="text-indigo-400">[*] Divine Engine initialized. Verified endpoints loaded.</div>
         </div>
     </aside>
@@ -95,7 +138,7 @@
                 <button id="sidebarToggleBtn" onclick="toggleSidebar()" class="hidden text-gray-500 hover:text-white transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
-                <h1 class="text-lg font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">DIVINE ⚡</h1>
+                <h1 id="chatTitle" class="text-sm font-semibold text-gray-300 truncate max-w-[300px]">New Chat</h1>
             </div>
             
             <div class="flex items-center gap-3">
@@ -113,7 +156,7 @@
         <!-- Chat History -->
         <main id="chatBox" class="flex-1 overflow-y-auto chat-scroll p-6 flex flex-col gap-6">
             <!-- Initial Message -->
-            <div class="flex flex-col gap-1 items-start w-full">
+            <div id="welcomeMessage" class="flex flex-col gap-1 items-start w-full">
                 <div class="flex items-center gap-2 mb-1 px-1">
                     <span class="text-xs font-semibold text-gray-400">Divine System</span>
                 </div>
@@ -150,7 +193,12 @@
 
     <script>
         const providers = {{ providers | tojson | safe }};
-        let chatHistory = [];
+        
+        // Chat Session State
+        let chats = JSON.parse(localStorage.getItem("divine_chats")) || [];
+        let currentChatId = null;
+        let chatHistory = []; // Current active API history array
+        
         let sidebarOpen = true;
 
         // Auto resize textarea without scrollbars
@@ -175,9 +223,24 @@
             }
         }
 
+        function switchTab(tabName) {
+            document.getElementById('tabBtnHistory').classList.remove('active');
+            document.getElementById('tabBtnLogs').classList.remove('active');
+            document.getElementById('tabContentHistory').classList.remove('active');
+            document.getElementById('tabContentLogs').classList.remove('active');
+
+            if(tabName === 'history') {
+                document.getElementById('tabBtnHistory').classList.add('active');
+                document.getElementById('tabContentHistory').classList.add('active');
+            } else {
+                document.getElementById('tabBtnLogs').classList.add('active');
+                document.getElementById('tabContentLogs').classList.add('active');
+            }
+        }
+
         // Add plain text log entry
         function addLog(message, type="info") {
-            const logBox = document.getElementById("logBox");
+            const logBox = document.getElementById("tabContentLogs");
             const entry = document.createElement("div");
             
             // Minimalist colors
@@ -211,6 +274,129 @@
 
         updateModels(); // Init
 
+        // ==========================================
+        // Chat History & Local Storage Management
+        // ==========================================
+
+        function saveChatsToStorage() {
+            localStorage.setItem("divine_chats", JSON.stringify(chats));
+            renderHistoryList();
+        }
+
+        function newChat() {
+            currentChatId = Date.now().toString();
+            chatHistory = []; // Reset active API history
+            
+            // Clear UI
+            const chatBox = document.getElementById("chatBox");
+            const indicator = document.getElementById("typingIndicator");
+            chatBox.innerHTML = "";
+            
+            // Restore welcome message
+            const welcomeHtml = `
+            <div id="welcomeMessage" class="flex flex-col gap-1 items-start w-full">
+                <div class="flex items-center gap-2 mb-1 px-1">
+                    <span class="text-xs font-semibold text-gray-400">Divine System</span>
+                </div>
+                <div class="glass-panel px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] text-sm text-gray-300 leading-relaxed shadow-lg">
+                    Welcome to the Divine Dashboard. You are securely connected.<br><br>
+                    Select <span class="text-indigo-400 font-semibold">Auto-Select</span> to let the Meta-Router dynamically pick the best hardware for your prompt.
+                </div>
+            </div>`;
+            chatBox.innerHTML = welcomeHtml;
+            chatBox.appendChild(indicator);
+            
+            document.getElementById("chatTitle").innerText = "New Chat";
+            renderHistoryList();
+            
+            // If on mobile, auto-close sidebar on new chat
+            if(window.innerWidth < 768) toggleSidebar();
+        }
+
+        function renderHistoryList() {
+            const list = document.getElementById("historyList");
+            list.innerHTML = "";
+            
+            // Sort chats by newest first
+            const sortedChats = [...chats].sort((a, b) => b.updatedAt - a.updatedAt);
+            
+            sortedChats.forEach(chat => {
+                const btn = document.createElement("button");
+                btn.className = `w-full text-left p-3 rounded-lg text-sm truncate transition-colors ${chat.id === currentChatId ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}`;
+                btn.innerText = chat.title || "New Chat";
+                btn.onclick = () => loadChat(chat.id);
+                list.appendChild(btn);
+            });
+        }
+
+        function loadChat(chatId) {
+            const chat = chats.find(c => c.id === chatId);
+            if (!chat) return;
+            
+            currentChatId = chatId;
+            chatHistory = [...chat.history]; // Restore API history
+            document.getElementById("chatTitle").innerText = chat.title;
+            
+            // Clear UI
+            const chatBox = document.getElementById("chatBox");
+            const indicator = document.getElementById("typingIndicator");
+            chatBox.innerHTML = "";
+            chatBox.appendChild(indicator);
+            
+            // Rebuild UI bubbles
+            chat.history.forEach(msg => {
+                // UI reconstructs user and AI messages. We don't store meta badges currently to keep it light, 
+                // but we render them correctly as user/ai.
+                appendMessageToUI(msg.role === 'user' ? 'You' : 'Divine', msg.content, msg.role === 'user' ? 'user' : 'ai');
+            });
+            
+            renderHistoryList();
+            scrollToBottom();
+            
+            if(window.innerWidth < 768) toggleSidebar();
+        }
+
+        function ensureChatSession(firstPrompt) {
+            if (!currentChatId) {
+                currentChatId = Date.now().toString();
+            }
+            let chat = chats.find(c => c.id === currentChatId);
+            if (!chat) {
+                chat = {
+                    id: currentChatId,
+                    title: firstPrompt.length > 30 ? firstPrompt.substring(0, 30) + "..." : firstPrompt,
+                    history: [],
+                    updatedAt: Date.now()
+                };
+                chats.push(chat);
+                document.getElementById("chatTitle").innerText = chat.title;
+            }
+            return chat;
+        }
+
+        function updateCurrentChatStorage(newMessages) {
+            if(!currentChatId) return;
+            let chat = chats.find(c => c.id === currentChatId);
+            if(chat) {
+                chat.history = chatHistory; // Sync history
+                chat.updatedAt = Date.now();
+                saveChatsToStorage();
+            }
+        }
+
+        // Initialize session
+        if(chats.length > 0) {
+            // Load most recent chat
+            const sortedChats = [...chats].sort((a, b) => b.updatedAt - a.updatedAt);
+            loadChat(sortedChats[0].id);
+        } else {
+            newChat();
+        }
+
+        // ==========================================
+        // Message Handling
+        // ==========================================
+
         function handleKey(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -228,14 +414,20 @@
 
             if (!text) return;
 
-            appendMessage("You", text, "user");
+            // Session Management
+            ensureChatSession(text);
+            
+            // Remove welcome message if exists
+            const welcome = document.getElementById("welcomeMessage");
+            if (welcome) welcome.remove();
+
+            appendMessageToUI("You", text, "user");
             input.value = "";
-            input.style.height = 'auto'; // Reset height
+            input.style.height = 'auto'; 
             
             input.disabled = true;
             sendBtn.disabled = true;
             
-            // Move indicator to bottom
             const chatBox = document.getElementById("chatBox");
             chatBox.appendChild(indicator);
             indicator.classList.remove("hidden");
@@ -266,6 +458,7 @@
                 if (data.success) {
                     chatHistory.push({"role": "user", "content": text});
                     chatHistory.push({"role": "assistant", "content": data.reply});
+                    updateCurrentChatStorage();
                     
                     let metaText = `${latency}s`;
                     if (data.auto_selected && !data.failover_occurred) {
@@ -278,16 +471,16 @@
                     }
                     
                     addLog(`Res: 200 OK (${latency}s)`, "success");
-                    appendMessage("Divine", data.reply, "ai", metaText);
+                    appendMessageToUI("Divine", data.reply, "ai", metaText);
                 } else {
                     addLog(`Err: ${data.error}`, "error");
-                    appendMessage("System Error", data.error, "ai", "Failure");
+                    appendMessageToUI("System Error", data.error, "ai", "Failure");
                 }
             } catch (err) {
                 indicator.classList.add("hidden");
                 indicator.classList.remove("flex");
                 addLog(`Net Err: ${err.message}`, "error");
-                appendMessage("System Error", "Connection failed.", "ai", "Error");
+                appendMessageToUI("System Error", "Connection failed.", "ai", "Error");
             }
 
             input.disabled = false;
@@ -302,7 +495,7 @@
                       .replace(/>/g, "&gt;");
         }
 
-        function appendMessage(sender, text, type, meta=null) {
+        function appendMessageToUI(sender, text, type, meta=null) {
             const chatBox = document.getElementById("chatBox");
             const indicator = document.getElementById("typingIndicator");
             
@@ -313,12 +506,9 @@
             let textStyles = "";
             
             if (type === 'user') {
-                // For user, just escape and show as simple text
                 htmlContent = escapeHTML(text).replace(/\n/g, '<br>');
                 textStyles = "px-5 py-3.5 rounded-2xl max-w-[85%] text-sm leading-relaxed border bg-indigo-600/20 border-indigo-500/30 text-indigo-50 rounded-tr-sm no-scrollbar overflow-hidden";
             } else {
-                // For AI, parse Markdown using marked.js
-                // Add prose class to apply Tailwind Typography styles
                 htmlContent = marked.parse(text);
                 textStyles = "px-5 py-3.5 rounded-2xl max-w-[85%] text-sm leading-relaxed border glass-panel rounded-tl-sm no-scrollbar overflow-hidden prose prose-invert prose-sm prose-pre:bg-gray-950 prose-pre:border prose-pre:border-white/5 max-w-none";
             }
