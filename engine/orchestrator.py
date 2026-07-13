@@ -64,9 +64,13 @@ class OmniEngine:
         if provider_name == "Cohere":
             # Cohere uses /v1/chat and requires 'message' + 'chat_history'
             chat_history = []
+            preamble = ""
             for msg in messages[:-1]:
-                role = "USER" if msg["role"] == "user" else "CHATBOT"
-                chat_history.append({"role": role, "message": msg["content"]})
+                if msg["role"] == "system":
+                    preamble += msg["content"] + "\n"
+                else:
+                    role = "USER" if msg["role"] == "user" else "CHATBOT"
+                    chat_history.append({"role": role, "message": msg["content"]})
                 
             payload = {
                 "model": model_name,
@@ -74,6 +78,8 @@ class OmniEngine:
                 "chat_history": chat_history,
                 "temperature": 0.7
             }
+            if preamble:
+                payload["preamble"] = preamble.strip()
         else:
             # Standard OpenAI formatting
             payload = {

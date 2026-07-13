@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 # Add project root to sys.path so we can import dashboard and engine
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from dashboard.app import app
+from frontend.app import app
 
 client = TestClient(app)
 
@@ -38,7 +38,7 @@ def test_models_json():
 def test_chat_endpoint_mocked(mocker):
     """Test the /api/chat endpoint using a mocked engine to avoid API calls."""
     # Mock the engine.chat method so we don't actually hit external APIs in CI/CD
-    mock_chat = mocker.patch("dashboard.app.engine.chat")
+    mock_chat = mocker.patch("frontend.app.engine.chat")
     
     # Define what the mocked engine should return
     mock_chat.return_value = {
