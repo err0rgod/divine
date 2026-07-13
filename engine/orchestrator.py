@@ -31,7 +31,7 @@ PROVIDERS = {
         "key": os.environ.get('BAZAARLINK_API_API_KEY')
     },
     "Cohere": {
-        "url": "https://api.cohere.com/v1/chat/completions",
+        "url": "https://api.cohere.com/v1/chat",  # Native endpoint
         "key": os.environ.get('COHERE_API_API_KEY')
     },
     "Google": {
@@ -60,20 +60,45 @@ class OmniEngine:
             headers["HTTP-Referer"] = "https://github.com/err0rgod/divine"
             headers["X-Title"] = "Divine"
 
-        payload = {
-            "model": model_name,
-            "messages": messages,
-            "max_tokens": max_tokens
-        }
+        # Construct Payload depending on provider
+        if provider_name == "Cohere":
+            # Cohere uses /v1/chat and requires 'message' + 'chat_history'
+            chat_history = []
+            for msg in messages[:-1]:
+                role = "USER" if msg["role"] == "user" else "CHATBOT"
+                chat_history.append({"role": role, "message": msg["content"]})
+                
+            payload = {
+                "model": model_name,
+                "message": messages[-1]["content"],
+                "chat_history": chat_history,
+                "temperature": 0.7
+            }
+        else:
+            # Standard OpenAI formatting
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "max_tokens": max_tokens
+            }
 
         try:
             response = requests.post(prov['url'], headers=headers, json=payload, timeout=60)
             if response.status_code == 200:
                 data = response.json()
+                
+                # Extract reply text depending on provider formatting
+                if provider_name == "Cohere":
+                    reply_text = data.get("text", "")
+                    usage = data.get("meta", {}).get("tokens", {})
+                else:
+                    reply_text = data['choices'][0]['message']['content']
+                    usage = data.get('usage', {})
+                    
                 return {
                     "success": True,
-                    "content": data['choices'][0]['message']['content'],
-                    "usage": data.get('usage', {})
+                    "content": reply_text,
+                    "usage": usage
                 }
             else:
                 return {
