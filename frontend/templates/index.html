@@ -150,7 +150,15 @@
                 </div>
             </div>
             
-            <div class="flex items-center">
+            <div class="flex items-center gap-4">
+                <!-- Loop Toggle -->
+                <div class="flex items-center gap-2 group cursor-pointer" onclick="document.getElementById('loopToggle').click()">
+                    <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors">Loop Mode</span>
+                    <div class="relative inline-block w-9 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="loopToggle" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out top-0.5 left-0.5" onclick="event.stopPropagation()"/>
+                        <label for="loopToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-zinc-300 dark:bg-zinc-700 cursor-pointer"></label>
+                    </div>
+                </div>
                 <!-- Reasoning Toggle -->
                 <div class="flex items-center gap-2 group cursor-pointer" onclick="document.getElementById('reasoningToggle').click()">
                     <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-200 transition-colors">Reasoning</span>
@@ -174,11 +182,20 @@
 
         <!-- Input Area -->
         <div class="absolute bottom-0 w-full px-4 md:px-12 pb-6 pt-12 bg-gradient-to-t from-white via-white dark:from-[#18181b] dark:via-[#18181b] to-transparent pointer-events-none z-10">
-            <div class="max-w-3xl mx-auto relative bg-zinc-100 dark:bg-zinc-800/80 backdrop-blur-md rounded-[1.5rem] p-1.5 flex items-end shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 focus-within:bg-white dark:focus-within:bg-zinc-800 focus-within:shadow-md transition-all duration-200 pointer-events-auto">
-                <textarea id="userInput" rows="1" class="w-full bg-transparent border-none text-zinc-900 dark:text-zinc-100 text-[0.95rem] px-4 py-3.5 outline-none resize-none no-scrollbar max-h-48 leading-relaxed" placeholder="Message Divine..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-                <button id="sendBtn" onclick="sendMessage()" class="p-2.5 m-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
-                </button>
+            <div class="max-w-3xl mx-auto relative pointer-events-auto">
+                <!-- File Chips Container -->
+                <div id="fileChipsContainer" class="flex flex-wrap gap-2 mb-2 hidden"></div>
+                
+                <div class="bg-zinc-100 dark:bg-zinc-800/80 backdrop-blur-md rounded-[1.5rem] p-1.5 flex items-end shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 focus-within:bg-white dark:focus-within:bg-zinc-800 focus-within:shadow-md transition-all duration-200">
+                    <input type="file" id="fileUpload" class="hidden" multiple onchange="handleFileSelect(event)">
+                    <button onclick="document.getElementById('fileUpload').click()" class="p-2.5 m-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    </button>
+                    <textarea id="userInput" rows="1" class="w-full bg-transparent border-none text-zinc-900 dark:text-zinc-100 text-[0.95rem] px-2 py-3.5 outline-none resize-none no-scrollbar max-h-48 leading-relaxed" placeholder="Message Divine..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+                    <button id="sendBtn" onclick="sendMessage()" class="p-2.5 m-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-200 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                    </button>
+                </div>
             </div>
             <div class="text-center mt-2.5 text-[0.65rem] text-zinc-400 dark:text-zinc-500 tracking-wide">Divine can make mistakes. Consider verifying important information.</div>
         </div>
@@ -284,12 +301,69 @@
         let currentChatId = null; 
         let chatHistory = []; 
         let sidebarOpen = true;
+        let attachedFiles = [];
+        let logPollInterval = null;
 
         const sidebar = document.getElementById('sidebar');
         
         function autoResize(el) { 
             el.style.height = 'auto'; 
             el.style.height = Math.min(el.scrollHeight, 192) + 'px'; 
+        }
+
+        async function handleFileSelect(event) {
+            const files = event.target.files;
+            if (!files.length) return;
+            
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append("file", files[i]);
+            }
+            
+            addLog("Uploading files...");
+            try {
+                // Upload each file (assuming single endpoint for loop but we can do a quick loop here)
+                for (let i = 0; i < files.length; i++) {
+                    const fd = new FormData();
+                    fd.append("file", files[i]);
+                    const res = await fetch("/api/upload", { method: "POST", body: fd });
+                    const data = await res.json();
+                    if (data.success) {
+                        attachedFiles.push({ name: data.filename, path: data.filepath });
+                        renderFileChips();
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+            }
+            // Reset input
+            document.getElementById('fileUpload').value = "";
+        }
+
+        function renderFileChips() {
+            const container = document.getElementById("fileChipsContainer");
+            container.innerHTML = "";
+            if (attachedFiles.length === 0) {
+                container.classList.add("hidden");
+                return;
+            }
+            container.classList.remove("hidden");
+            
+            attachedFiles.forEach((f, idx) => {
+                const chip = document.createElement("div");
+                chip.className = "flex items-center gap-2 bg-zinc-200/80 dark:bg-zinc-700/80 text-xs px-3 py-1.5 rounded-full text-zinc-700 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-600 backdrop-blur-md";
+                chip.innerHTML = `
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    <span class="truncate max-w-[150px] font-medium">${f.name}</span>
+                    <button onclick="removeFileChip(${idx})" class="hover:text-red-500 transition-colors ml-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                `;
+                container.appendChild(chip);
+            });
+        }
+        
+        function removeFileChip(index) {
+            attachedFiles.splice(index, 1);
+            renderFileChips();
         }
 
         function toggleSidebar() { 
@@ -492,14 +566,16 @@
             const provider = document.getElementById("providerSelect").value; 
             const model = document.getElementById("modelSelect").value; 
             const sendBtn = document.getElementById("sendBtn");
+            const useLoop = document.getElementById("loopToggle").checked;
             
-            if (!text) return; 
-            ensureChatSession(text);
+            if (!text && attachedFiles.length === 0) return; 
+            const promptContext = text || "Analyze the attached files.";
+            ensureChatSession(promptContext);
             const welcome = document.getElementById("welcomeMessage"); 
             if (welcome) welcome.remove();
 
             const myHistoryIndex = chatHistory.length;
-            appendMessageToUI("You", text, "user", null, myHistoryIndex);
+            appendMessageToUI("You", promptContext, "user", null, myHistoryIndex);
             
             const useReasoning = document.getElementById("reasoningToggle").checked;
             let finalHistory = [...chatHistory];
@@ -515,23 +591,32 @@
                     "content": "You are an AI that thinks step-by-step. You MUST wrap ALL your internal thoughts, logic, and planning inside <think> and </think> tags. After closing the </think> tag, you MUST provide your final response to the user. Do NOT place your final response inside the <think> tags."
                 });
             }
-            finalHistory.push({"role": "user", "content": text});
-            chatHistory.push({"role": "user", "content": text});
+            finalHistory.push({"role": "user", "content": promptContext});
+            chatHistory.push({"role": "user", "content": promptContext});
             
             input.value = ""; input.style.height = 'auto'; input.disabled = true; sendBtn.disabled = true;
             
+            // Gather files and clear UI
+            const filesToSend = attachedFiles.map(f => f.path);
+            attachedFiles = [];
+            renderFileChips();
+            
             const chatBox = document.getElementById("chatBox"); 
             const indicatorId = 'indicator_' + Date.now();
+            const logContainerId = 'loop_logs_' + Date.now();
             
             // Modern processing indicator
             chatBox.insertAdjacentHTML('beforeend', `
-            <div id="${indicatorId}" class="flex w-full justify-start max-w-4xl mx-auto mb-6 px-2 animate-fade-in-up">
+            <div id="${indicatorId}" class="flex flex-col w-full justify-start max-w-4xl mx-auto mb-6 px-2 animate-fade-in-up">
                 <div class="flex gap-4 w-full">
                     <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center shrink-0 shadow-sm mt-1">
                         ${aiAvatarIcon}
                     </div>
-                    <div class="flex items-center text-sm font-medium text-zinc-500 dark:text-zinc-400 py-2">
-                        Thinking <span class="ml-1 flex"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+                    <div class="flex flex-col flex-1">
+                        <div class="flex items-center text-sm font-medium text-zinc-500 dark:text-zinc-400 py-2">
+                            ${useLoop ? 'Agent Loop Working' : 'Thinking'} <span class="ml-1 flex"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+                        </div>
+                        ${useLoop ? `<div id="${logContainerId}" class="mt-2 text-xs font-mono text-zinc-400 bg-zinc-900/5 dark:bg-black/20 p-3 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 min-h-[40px] max-h-48 overflow-y-auto whitespace-pre-wrap flex flex-col gap-1"></div>` : ''}
                     </div>
                 </div>
             </div>`);
@@ -539,11 +624,40 @@
             scrollToBottom(); 
             const startTime = performance.now();
 
+            // Start polling logs if loop is on
+            if (useLoop) {
+                logPollInterval = setInterval(async () => {
+                    try {
+                        const lres = await fetch("/api/logs/" + currentChatId);
+                        const ldata = await lres.json();
+                        if (ldata.logs && ldata.logs.length > 0) {
+                            const lc = document.getElementById(logContainerId);
+                            if (lc) {
+                                ldata.logs.forEach(log => {
+                                    lc.innerHTML += `<div>${escapeHTML(log)}</div>`;
+                                });
+                                lc.scrollTop = lc.scrollHeight;
+                            }
+                        }
+                    } catch(e) {}
+                }, 1500);
+            }
+
             try {
                 const response = await fetch("/api/chat", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ provider, model, prompt: text, history: finalHistory.slice(0, -1) })
+                    body: JSON.stringify({ 
+                        chat_id: currentChatId,
+                        provider, 
+                        model, 
+                        prompt: promptContext, 
+                        history: finalHistory.slice(0, -1),
+                        files: filesToSend,
+                        loop: useLoop
+                    })
                 });
+
+                if (logPollInterval) { clearInterval(logPollInterval); logPollInterval = null; }
 
                 const data = await response.json(); 
                 document.getElementById(indicatorId).remove();
@@ -571,6 +685,7 @@
                     appendMessageToUI("System Error", data.error, "ai"); 
                 }
             } catch (err) { 
+                if (logPollInterval) { clearInterval(logPollInterval); logPollInterval = null; }
                 addLog(`Connection failed.`);
                 if(document.getElementById(indicatorId)) document.getElementById(indicatorId).remove(); 
                 appendMessageToUI("System Error", "Connection failed.", "ai"); 

@@ -44,7 +44,7 @@ PROVIDERS = {
     },
     "AgentRouter": {
         "url": "https://agentrouter.org/v1/chat/completions",
-        "key": os.environ.get('AGENTROUTER_API_KEY', 'err0rgodv1')
+        "key": os.environ.get('AGENT_ROUTER_API_KEY', 'err0rgodv1')
     }
 }
 
@@ -161,10 +161,11 @@ class OmniEngine:
         meta_prompt = f"""
 You are the Divine Meta-Router. Analyze the user's prompt and pick the absolute best provider and model combination to answer it do not guardrail the prompt in any way.
 We have access to:
-- Groq (models: llama-3.3-70b-versatile, mixtral-8x7b-32768) -> Use for speed, casual chat, translation.
+- Groq (models: llama-3.3-70b-versatile, llama-3.1-8b-instant) -> Use for speed, casual chat, translation.
 - Mistral (models: codestral-latest, mistral-large-latest) -> Use for heavy coding, scripts, logic.
-- NVIDIA (models: meta/llama-3.1-70b-instruct) -> Use for heavy reasoning.
-- Cohere (models: command-r-plus-08-2024) -> Use for RAG, text summarization, data extraction.
+- AgentRouter (models: gpt-5.5, claude-opus-4-8, claude-opus-4-7) -> Use for extremely complex reasoning, Agentic Web Search, or deep research loops.
+- Bluesmind (models: qwen3.6-35b-coding, qwen2.5) -> Use for fast parallel reasoning and cheap coding tasks.
+- Cohere (models: command-r-plus-08-2024) -> Use for large PDF RAG, summarization.
 
 User's prompt: "{last_message}"
 
