@@ -181,7 +181,8 @@
 
         const providers = {{ providers | tojson | safe }};
         let sessionTokens = 0, sessionCost = 0.0;
-        let chats = JSON.parse(localStorage.getItem("divine_chats")) || [];
+        let chats = [];
+        try { chats = JSON.parse(localStorage.getItem("divine_chats")) || []; } catch(e) { console.error("Corrupted chat history", e); chats = []; }
         let currentChatId = null; let chatHistory = []; let sidebarOpen = true;
 
         function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 192) + 'px'; }
@@ -195,7 +196,7 @@
         function saveChatsToStorage() { localStorage.setItem("divine_chats", JSON.stringify(chats)); renderHistoryList(); }
         function newChat() { currentChatId = Date.now().toString(); chatHistory = []; document.getElementById("chatBox").innerHTML = `<div id="welcomeMessage" class="flex flex-col gap-1 items-start w-full"><div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] text-sm text-gray-700 dark:text-gray-300 shadow-sm">Connected. Type a message to begin.</div></div>`; document.getElementById("chatTitle").innerText = "New Chat"; renderHistoryList(); document.getElementById("userInput").focus(); }
         function renderHistoryList() { const list = document.getElementById("historyList"); list.innerHTML = ""; const sortedChats = [...chats].sort((a, b) => b.updatedAt - a.updatedAt); sortedChats.forEach(chat => { const btn = document.createElement("button"); btn.className = `w-full text-left p-3 rounded-lg text-sm truncate transition-colors border border-transparent ${chat.id === currentChatId ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`; btn.innerText = chat.title || "New Chat"; btn.onclick = () => loadChat(chat.id); list.appendChild(btn); }); }
-        function loadChat(chatId) { const chat = chats.find(c => c.id === chatId); if (!chat) return; currentChatId = chatId; chatHistory = [...chat.history]; document.getElementById("chatTitle").innerText = chat.title; document.getElementById("chatBox").innerHTML = ""; chat.history.forEach((msg, idx) => appendMessageToUI(msg.role === 'user' ? 'You' : 'Divine', msg.content, msg.role === 'user' ? 'user' : 'ai', null, idx)); renderHistoryList(); scrollToBottom(); }
+        function loadChat(chatId) { const chat = chats.find(c => c.id === chatId); if (!chat) return; currentChatId = chatId; chatHistory = Array.isArray(chat.history) ? [...chat.history] : []; document.getElementById("chatTitle").innerText = chat.title; document.getElementById("chatBox").innerHTML = ""; chatHistory.forEach((msg, idx) => appendMessageToUI(msg.role === 'user' ? 'You' : 'Divine', msg.content, msg.role === 'user' ? 'user' : 'ai', null, idx)); renderHistoryList(); scrollToBottom(); }
         function ensureChatSession(firstPrompt) { if (!currentChatId) currentChatId = Date.now().toString(); let chat = chats.find(c => c.id === currentChatId); if (!chat) { chat = { id: currentChatId, title: firstPrompt.length > 30 ? firstPrompt.substring(0, 30) + "..." : firstPrompt, history: [], updatedAt: Date.now() }; chats.push(chat); document.getElementById("chatTitle").innerText = chat.title; } return chat; }
         function updateCurrentChatStorage() { if(!currentChatId) return; let chat = chats.find(c => c.id === currentChatId); if(chat) { chat.history = chatHistory; chat.updatedAt = Date.now(); saveChatsToStorage(); } }
 
