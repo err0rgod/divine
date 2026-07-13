@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Divine | Intelligence Engine</title>
+    <!-- Tailwind CSS with Typography Plugin -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    
+    <!-- Marked.js for Markdown Parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Highlight.js for Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -48,20 +56,31 @@
         .tab-content { display: none; }
         .tab-content.active { display: flex; }
 
-        /* Code Block Copy Button */
-        pre { position: relative; }
+        /* Code Block Styling */
+        pre { position: relative; margin: 1em 0; border-radius: 0.5rem; overflow: hidden; }
+        pre code { display: block; overflow-x: auto; padding: 1.5rem !important; font-size: 0.85em; }
         .copy-btn {
             position: absolute; top: 0.5rem; right: 0.5rem;
             background: rgba(255,255,255,0.1); color: #9ca3af;
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 0.25rem;
-            padding: 0.25rem 0.5rem; font-size: 0.7rem; font-family: sans-serif;
-            cursor: pointer; transition: all 0.2s; opacity: 0;
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 0.375rem;
+            padding: 0.25rem 0.6rem; font-size: 0.7rem; font-family: sans-serif; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; opacity: 0; backdrop-filter: blur(4px);
         }
-        .dark .copy-btn { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
+        .dark .copy-btn { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); }
         pre:hover .copy-btn { opacity: 1; }
         .copy-btn:hover { color: #fff; background: rgba(255,255,255,0.2); }
         
-        /* Resizer */
+        /* Message Actions (Edit & Retry) */
+        .msg-actions {
+            opacity: 0; transition: opacity 0.2s; display: flex; gap: 0.5rem; margin-top: 0.5rem;
+        }
+        .message-row:hover .msg-actions { opacity: 1; }
+        .action-btn {
+            font-size: 0.7rem; color: #9ca3af; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;
+        }
+        .action-btn:hover { color: #374151; }
+        .dark .action-btn:hover { color: #f3f4f6; }
+
         #resizer { width: 5px; cursor: col-resize; background: transparent; z-index: 50; }
         #resizer:hover, #resizer:active { background: #9ca3af; }
     </style>
@@ -71,8 +90,8 @@
     <!-- Extreme Left Vertical Nav -->
     <nav class="w-16 h-full bg-gray-200 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-800 flex flex-col items-center py-4 z-30 justify-between transition-colors duration-300">
         <div class="flex flex-col gap-2 w-full">
-            <div class="mb-6 flex justify-center">
-                <svg class="w-8 h-8 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <div class="mb-6 flex justify-center text-gray-700 dark:text-gray-300" title="Divine AI">
+                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             </div>
             <button onclick="switchTab('history')" id="navHistory" class="nav-btn active w-full py-3 flex justify-center text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors" title="Chat History">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -87,17 +106,13 @@
         
         <!-- Theme Toggle -->
         <button onclick="toggleTheme()" class="w-full py-3 flex justify-center text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors" title="Toggle Theme">
-            <!-- Sun Icon for Dark Mode -->
             <svg id="themeIconDark" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-            <!-- Moon Icon for Light Mode -->
             <svg id="themeIconLight" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
         </button>
     </nav>
 
     <!-- Collapsible Sidebar Panel -->
     <aside id="sidebar" class="h-full bg-white dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 flex flex-col transition-colors duration-300 relative z-20" style="width: 320px; min-width: 200px; max-width: 600px;">
-        
-        <!-- Header -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <span id="sidebarTitle" class="text-xs font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase">History</span>
             <button onclick="toggleSidebar()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
@@ -105,30 +120,25 @@
             </button>
         </div>
 
-        <!-- History Tab -->
         <div id="tabContentHistory" class="tab-content active flex-1 flex-col overflow-y-auto no-scrollbar p-3 gap-2">
             <button onclick="newChat()" class="w-full flex items-center justify-center gap-2 p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 transition-colors text-sm font-semibold shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                New Chat
+                New Chat (Ctrl+Shift+N)
             </button>
             <div class="h-px bg-gray-200 dark:bg-gray-700 w-full my-1"></div>
             <div id="historyList" class="flex flex-col gap-1 w-full"></div>
         </div>
 
-        <!-- Logs Tab -->
         <div id="tabContentLogs" class="tab-content flex-1 flex-col overflow-y-auto no-scrollbar p-4 text-[0.7rem] font-mono gap-1 text-gray-700 dark:text-gray-400">
             <div>> System initialized.</div>
         </div>
 
-        <!-- Health Tab -->
         <div id="tabContentHealth" class="tab-content flex-1 flex-col overflow-y-auto no-scrollbar p-4 gap-4">
             <div class="flex justify-between items-center">
                 <span class="text-xs text-gray-500 dark:text-gray-400">Endpoint Status</span>
                 <button onclick="checkHealth()" class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-2 py-1 rounded text-gray-700 dark:text-gray-300 transition">Ping</button>
             </div>
-            
             <div id="healthList" class="flex flex-col gap-3 w-full"></div>
-
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <span class="text-xs text-gray-500 dark:text-gray-400 block mb-2">Session Usage</span>
                 <div class="bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
@@ -145,13 +155,10 @@
         </div>
     </aside>
 
-    <!-- Resizer Handle -->
     <div id="resizer" class="h-full"></div>
 
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col h-full relative transition-colors duration-300">
-        
-        <!-- Header -->
         <header class="h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 z-10">
             <div class="flex items-center gap-4">
                 <button id="sidebarToggleBtn" onclick="toggleSidebar()" class="hidden text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
@@ -171,130 +178,101 @@
             </div>
         </header>
 
-        <!-- Chat History -->
-        <main id="chatBox" class="flex-1 overflow-y-auto chat-scroll p-6 flex flex-col gap-6">
-            <div id="welcomeMessage" class="flex flex-col gap-1 items-start w-full">
-                <div class="flex items-center gap-2 mb-1 px-1">
-                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">System</span>
-                </div>
-                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] text-sm text-gray-700 dark:text-gray-300 leading-relaxed shadow-sm">
-                    Connected. Select Auto-Select to route your prompt automatically.
-                </div>
-            </div>
-            
-            <div id="typingIndicator" class="hidden flex-col gap-1 items-start w-full">
-                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-3 rounded-2xl rounded-tl-sm text-sm text-gray-500 dark:text-gray-400 italic flex items-center">
-                    Processing <span class="ml-2 flex"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
-                </div>
-            </div>
+        <main id="chatBox" class="flex-1 overflow-y-auto chat-scroll p-6 flex flex-col gap-6 relative pb-32">
+            <!-- Messages rendered here -->
         </main>
 
         <!-- Input Box -->
-        <div class="p-6 pt-2 bg-gradient-to-t from-gray-50 dark:from-gray-950 to-transparent">
-            <div class="max-w-4xl mx-auto relative bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-2xl p-2 flex items-end shadow-lg focus-within:border-gray-400 dark:focus-within:border-gray-500 transition-colors">
+        <div class="absolute bottom-0 w-full p-6 pt-12 bg-gradient-to-t from-gray-50 dark:from-gray-950 to-transparent pointer-events-none">
+            <div class="max-w-4xl mx-auto relative bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-2xl p-2 flex items-end shadow-2xl focus-within:border-gray-400 dark:focus-within:border-gray-500 transition-colors pointer-events-auto">
                 <textarea id="userInput" rows="1"
-                          class="w-full bg-transparent border-none text-gray-900 dark:text-gray-200 text-sm p-3 outline-none resize-none no-scrollbar max-h-32" 
-                          placeholder="Message..."
+                          class="w-full bg-transparent border-none text-gray-900 dark:text-gray-200 text-sm p-3 outline-none resize-none no-scrollbar max-h-48" 
+                          placeholder="Message Divine..."
                           onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
                 <button id="sendBtn" onclick="sendMessage()" class="p-3 m-1 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
+            <div class="text-center mt-2 text-[0.65rem] text-gray-400">Ctrl+Shift+O to toggle sidebar • Ctrl+Shift+N for new chat</div>
         </div>
-        
     </div>
 
     <script>
-        // ==========================================
-        // Theme Management
-        // ==========================================
+        // Set marked.js options for highlight.js integration
+        marked.setOptions({
+            highlight: function(code, lang) {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                return hljs.highlight(code, { language }).value;
+            },
+            langPrefix: 'hljs language-'
+        });
+
+        // Theme initialization
         if (localStorage.theme === 'light') {
             document.documentElement.classList.remove('dark');
+            document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css";
         } else {
             document.documentElement.classList.add('dark');
+            document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css";
         }
 
         function toggleTheme() {
             if (document.documentElement.classList.contains('dark')) {
                 document.documentElement.classList.remove('dark');
                 localStorage.theme = 'light';
+                document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css";
             } else {
                 document.documentElement.classList.add('dark');
                 localStorage.theme = 'dark';
+                document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css";
             }
         }
 
-        // ==========================================
-        // Sidebar Resizer Logic
-        // ==========================================
+        // Global Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey) {
+                if (e.key.toLowerCase() === 'o') { e.preventDefault(); toggleSidebar(); }
+                if (e.key.toLowerCase() === 'n') { e.preventDefault(); newChat(); }
+            }
+        });
+
         const resizer = document.getElementById('resizer');
         const sidebar = document.getElementById('sidebar');
         let isResizing = false;
 
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            document.body.style.cursor = 'col-resize';
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            // 64px is the width of the vertical nav
-            const newWidth = e.clientX - 64; 
-            if (newWidth > 200 && newWidth < 600) {
-                sidebar.style.width = newWidth + 'px';
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = 'default';
-            }
-        });
+        resizer.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'col-resize'; e.preventDefault(); });
+        document.addEventListener('mousemove', (e) => { if (!isResizing) return; const newWidth = e.clientX - 64; if (newWidth > 200 && newWidth < 600) sidebar.style.width = newWidth + 'px'; });
+        document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; document.body.style.cursor = 'default'; }});
 
         const providers = {{ providers | tojson | safe }};
-        let sessionTokens = 0;
-        let sessionCost = 0.0;
+        let sessionTokens = 0, sessionCost = 0.0;
         let chats = JSON.parse(localStorage.getItem("divine_chats")) || [];
         let currentChatId = null;
         let chatHistory = [];
         let sidebarOpen = true;
 
-        function autoResize(el) {
-            el.style.height = 'auto';
-            el.style.height = Math.min(el.scrollHeight, 128) + 'px';
-        }
+        function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 192) + 'px'; }
 
         function toggleSidebar() {
-            const sidebarEl = document.getElementById("sidebar");
             const toggleBtn = document.getElementById("sidebarToggleBtn");
             if (sidebarOpen) {
-                sidebarEl.style.display = "none";
-                resizer.style.display = "none";
-                toggleBtn.classList.remove("hidden");
-                sidebarOpen = false;
+                sidebar.style.display = "none"; resizer.style.display = "none"; toggleBtn.classList.remove("hidden"); sidebarOpen = false;
             } else {
-                sidebarEl.style.display = "flex";
-                resizer.style.display = "block";
-                toggleBtn.classList.add("hidden");
-                sidebarOpen = true;
+                sidebar.style.display = "flex"; resizer.style.display = "block"; toggleBtn.classList.add("hidden"); sidebarOpen = true;
             }
         }
 
         function switchTab(tabName) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
             document.getElementById(`nav${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
             document.getElementById(`tabContent${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
             document.getElementById('sidebarTitle').innerText = tabName;
-
             if(!sidebarOpen) toggleSidebar();
             if(tabName === 'health') renderHealthList();
         }
 
-        function addLog(message, type="info") {
+        function addLog(message) {
             const logBox = document.getElementById("tabContentLogs");
             const entry = document.createElement("div");
             entry.innerText = `> ${message}`;
@@ -308,41 +286,31 @@
             modelSelect.innerHTML = "";
             if (providers[provider]) {
                 providers[provider].forEach(model => {
-                    const opt = document.createElement("option");
-                    opt.value = model;
-                    opt.innerText = model;
+                    const opt = document.createElement("option"); opt.value = model; opt.innerText = model;
                     modelSelect.appendChild(opt);
                 });
-                addLog(`Context: ${provider}`, "info");
+                addLog(`Context: ${provider}`);
             }
         }
         updateModels();
 
-        function saveChatsToStorage() {
-            localStorage.setItem("divine_chats", JSON.stringify(chats));
-            renderHistoryList();
-        }
+        function saveChatsToStorage() { localStorage.setItem("divine_chats", JSON.stringify(chats)); renderHistoryList(); }
 
         function newChat() {
-            currentChatId = Date.now().toString();
-            chatHistory = [];
-            const chatBox = document.getElementById("chatBox");
-            const indicator = document.getElementById("typingIndicator");
-            chatBox.innerHTML = `
+            currentChatId = Date.now().toString(); chatHistory = [];
+            document.getElementById("chatBox").innerHTML = `
             <div id="welcomeMessage" class="flex flex-col gap-1 items-start w-full">
-                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] text-sm text-gray-700 dark:text-gray-300 leading-relaxed shadow-sm">
-                    Connected. Select Auto-Select to route your prompt automatically.
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-3.5 rounded-2xl rounded-tl-sm max-w-[80%] text-sm text-gray-700 dark:text-gray-300 shadow-sm">
+                    Connected. Type a message to begin.
                 </div>
             </div>`;
-            chatBox.appendChild(indicator);
             document.getElementById("chatTitle").innerText = "New Chat";
             renderHistoryList();
-            if(window.innerWidth < 768) toggleSidebar();
+            document.getElementById("userInput").focus();
         }
 
         function renderHistoryList() {
-            const list = document.getElementById("historyList");
-            list.innerHTML = "";
+            const list = document.getElementById("historyList"); list.innerHTML = "";
             const sortedChats = [...chats].sort((a, b) => b.updatedAt - a.updatedAt);
             sortedChats.forEach(chat => {
                 const btn = document.createElement("button");
@@ -354,19 +322,12 @@
         }
 
         function loadChat(chatId) {
-            const chat = chats.find(c => c.id === chatId);
-            if (!chat) return;
-            currentChatId = chatId;
-            chatHistory = [...chat.history];
+            const chat = chats.find(c => c.id === chatId); if (!chat) return;
+            currentChatId = chatId; chatHistory = [...chat.history];
             document.getElementById("chatTitle").innerText = chat.title;
-            const chatBox = document.getElementById("chatBox");
-            const indicator = document.getElementById("typingIndicator");
-            chatBox.innerHTML = "";
-            chatBox.appendChild(indicator);
-            chat.history.forEach(msg => appendMessageToUI(msg.role === 'user' ? 'You' : 'Divine', msg.content, msg.role === 'user' ? 'user' : 'ai'));
-            renderHistoryList();
-            scrollToBottom();
-            if(window.innerWidth < 768) toggleSidebar();
+            document.getElementById("chatBox").innerHTML = "";
+            chat.history.forEach((msg, idx) => appendMessageToUI(msg.role === 'user' ? 'You' : 'Divine', msg.content, msg.role === 'user' ? 'user' : 'ai', null, idx));
+            renderHistoryList(); scrollToBottom();
         }
 
         function ensureChatSession(firstPrompt) {
@@ -374,8 +335,7 @@
             let chat = chats.find(c => c.id === currentChatId);
             if (!chat) {
                 chat = { id: currentChatId, title: firstPrompt.length > 30 ? firstPrompt.substring(0, 30) + "..." : firstPrompt, history: [], updatedAt: Date.now() };
-                chats.push(chat);
-                document.getElementById("chatTitle").innerText = chat.title;
+                chats.push(chat); document.getElementById("chatTitle").innerText = chat.title;
             }
             return chat;
         }
@@ -386,27 +346,20 @@
             if(chat) { chat.history = chatHistory; chat.updatedAt = Date.now(); saveChatsToStorage(); }
         }
 
-        if(chats.length > 0) {
-            loadChat([...chats].sort((a, b) => b.updatedAt - a.updatedAt)[0].id);
-        } else {
-            newChat();
-        }
+        if(chats.length > 0) loadChat([...chats].sort((a, b) => b.updatedAt - a.updatedAt)[0].id);
+        else newChat();
 
         let apiHealth = {};
         Object.keys(providers).forEach(p => { if(p !== "Auto-Select") apiHealth[p] = providers[p].length > 0 ? "Online" : "Offline"; });
 
         function renderHealthList() {
-            const list = document.getElementById("healthList");
-            list.innerHTML = "";
+            const list = document.getElementById("healthList"); list.innerHTML = "";
             Object.keys(apiHealth).forEach(p => {
                 const status = apiHealth[p];
                 const dotColor = status === "Online" ? "bg-green-500" : (status === "Offline" ? "bg-red-500" : "bg-yellow-500");
                 list.innerHTML += `
                 <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center gap-3">
-                        <div class="w-2 h-2 rounded-full ${dotColor}"></div>
-                        <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">${p}</div>
-                    </div>
+                    <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full ${dotColor}"></div><div class="text-sm font-semibold text-gray-700 dark:text-gray-300">${p}</div></div>
                     <span class="text-xs font-mono text-gray-500 dark:text-gray-400">${status}</span>
                 </div>`;
             });
@@ -414,26 +367,38 @@
         renderHealthList();
 
         function checkHealth() {
-            addLog("Pinging endpoints...");
-            Object.keys(apiHealth).forEach(p => { apiHealth[p] = "Pinging..."; });
-            renderHealthList();
+            addLog("Pinging endpoints..."); Object.keys(apiHealth).forEach(p => { apiHealth[p] = "Pinging..."; }); renderHealthList();
             setTimeout(() => {
                 Object.keys(providers).forEach(p => { if(p !== "Auto-Select") apiHealth[p] = providers[p].length > 0 ? "Online" : "Offline"; });
-                renderHealthList();
-                addLog("Health check complete.");
+                renderHealthList(); addLog("Health check complete.");
             }, 1000);
         }
 
         function updateMetrics(usage) {
             if(!usage || !usage.total_tokens) return;
-            sessionTokens += usage.total_tokens;
-            document.getElementById("metricTokens").innerText = sessionTokens.toLocaleString();
-            sessionCost += (usage.total_tokens / 1000000) * 0.50;
-            document.getElementById("metricCost").innerText = "$" + sessionCost.toFixed(4);
+            sessionTokens += usage.total_tokens; document.getElementById("metricTokens").innerText = sessionTokens.toLocaleString();
+            sessionCost += (usage.total_tokens / 1000000) * 0.50; document.getElementById("metricCost").innerText = "$" + sessionCost.toFixed(4);
         }
 
-        function handleKey(e) {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+
+        // Avatar SVGs
+        const userAvatar = `<svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
+        const aiAvatar = `<svg class="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a5 5 0 0 1 5 5v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a5 5 0 0 1 5-5h1V5.73A2 2 0 1 1 12 2zm0 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>`;
+
+        function editPrompt(historyIndex) {
+            const promptText = chatHistory[historyIndex].content;
+            document.getElementById("userInput").value = promptText;
+            autoResize(document.getElementById("userInput"));
+            
+            // Delete this message and all subsequent messages from history
+            chatHistory = chatHistory.slice(0, historyIndex);
+            updateCurrentChatStorage();
+            
+            // Reload the truncated history to UI
+            document.getElementById("chatBox").innerHTML = "";
+            chatHistory.forEach((msg, idx) => appendMessageToUI(msg.role === 'user' ? 'You' : 'Divine', msg.content, msg.role === 'user' ? 'user' : 'ai', null, idx));
+            document.getElementById("userInput").focus();
         }
 
         async function sendMessage() {
@@ -442,43 +407,63 @@
             const provider = document.getElementById("providerSelect").value;
             const model = document.getElementById("modelSelect").value;
             const sendBtn = document.getElementById("sendBtn");
-            const indicator = document.getElementById("typingIndicator");
 
             if (!text) return;
             ensureChatSession(text);
             const welcome = document.getElementById("welcomeMessage");
             if (welcome) welcome.remove();
 
-            appendMessageToUI("You", text, "user");
+            const myHistoryIndex = chatHistory.length; // Index before pushing
+            appendMessageToUI("You", text, "user", null, myHistoryIndex);
+            
+            chatHistory.push({"role": "user", "content": text});
+            
             input.value = ""; input.style.height = 'auto'; 
             input.disabled = true; sendBtn.disabled = true;
             
+            // Show Typing Indicator
             const chatBox = document.getElementById("chatBox");
-            chatBox.appendChild(indicator);
-            indicator.classList.remove("hidden"); indicator.classList.add("flex");
+            const indicatorId = 'indicator_' + Date.now();
+            const indicatorHtml = `
+            <div id="${indicatorId}" class="flex flex-col gap-1 items-start w-full mb-4 message-row">
+                <div class="flex items-center gap-2 mb-1 px-1">
+                    <div class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 flex items-center justify-center">${aiAvatar}</div>
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Divine Engine</span>
+                </div>
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-3 rounded-2xl rounded-tl-sm text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                    Processing <span class="ml-2 flex"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+                </div>
+            </div>`;
+            chatBox.insertAdjacentHTML('beforeend', indicatorHtml);
             scrollToBottom();
 
             const startTime = performance.now();
+            addLog(provider === "Auto-Select" ? `Analyzing prompt via Meta-Router...` : `Req: ${provider}/${model}`);
+
             try {
                 const response = await fetch("/api/chat", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ provider, model, prompt: text, history: chatHistory })
+                    body: JSON.stringify({ provider, model, prompt: text, history: chatHistory.slice(0, -1) })
                 });
 
                 const data = await response.json();
-                indicator.classList.add("hidden"); indicator.classList.remove("flex");
+                document.getElementById(indicatorId).remove();
 
                 if (data.success) {
-                    chatHistory.push({"role": "user", "content": text});
                     chatHistory.push({"role": "assistant", "content": data.reply});
                     updateCurrentChatStorage();
                     if(data.usage) updateMetrics(data.usage);
-                    appendMessageToUI("Divine", data.reply, "ai");
+                    
+                    let metaText = `${((performance.now() - startTime) / 1000).toFixed(2)}s`;
+                    if (data.auto_selected && !data.failover_occurred) metaText += ` • ${data.provider_used} (${data.model_used})`;
+                    if (data.failover_occurred) metaText += ` • 🚨 Failed over to ${data.provider_used} (${data.model_used})`;
+                    
+                    appendMessageToUI("Divine", data.reply, "ai", metaText, chatHistory.length - 1);
                 } else {
                     appendMessageToUI("System Error", data.error, "ai");
                 }
             } catch (err) {
-                indicator.classList.add("hidden"); indicator.classList.remove("flex");
+                document.getElementById(indicatorId).remove();
                 appendMessageToUI("System Error", "Connection failed.", "ai");
             }
 
@@ -488,15 +473,16 @@
 
         function escapeHTML(str) { return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
-        function appendMessageToUI(sender, text, type) {
+        function appendMessageToUI(sender, text, type, meta=null, historyIndex=null) {
             const chatBox = document.getElementById("chatBox");
-            const indicator = document.getElementById("typingIndicator");
             const row = document.createElement("div");
-            row.className = `flex flex-col gap-1 w-full ${type === 'user' ? 'items-end' : 'items-start'}`;
+            row.className = `flex flex-col gap-1 w-full mb-4 message-row ${type === 'user' ? 'items-end' : 'items-start'}`;
             
-            let htmlContent = "";
-            let textStyles = "";
-            
+            let htmlContent = ""; let textStyles = "";
+            let avatarHtml = type === 'user' 
+                ? `<div class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">${userAvatar}</div>`
+                : `<div class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 flex items-center justify-center">${aiAvatar}</div>`;
+
             if (type === 'user') {
                 htmlContent = escapeHTML(text).replace(/\n/g, '<br>');
                 textStyles = "px-5 py-3.5 rounded-2xl max-w-[85%] text-sm leading-relaxed bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-tr-sm no-scrollbar overflow-hidden";
@@ -505,26 +491,34 @@
                 textStyles = "px-5 py-3.5 rounded-2xl max-w-[85%] text-sm leading-relaxed border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-sm no-scrollbar overflow-hidden prose dark:prose-invert prose-sm prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-pre:border prose-pre:border-gray-200 dark:prose-pre:border-gray-700 max-w-none";
             }
 
+            let metaHtml = meta ? `<span class="ml-2 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 text-[0.65rem]">${meta}</span>` : '';
+            
+            // Edit action for user messages
+            let actionsHtml = type === 'user' && historyIndex !== null ? `
+                <div class="msg-actions">
+                    <button class="action-btn" onclick="editPrompt(${historyIndex})" title="Edit & Retry">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Edit
+                    </button>
+                </div>
+            ` : '';
+
             row.innerHTML = `
-                <div class="flex items-center gap-2 mb-1 px-1">
+                <div class="flex items-center gap-2 mb-1 px-1 ${type === 'user' ? 'flex-row-reverse' : 'flex-row'}">
+                    ${avatarHtml}
                     <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">${sender}</span>
+                    ${metaHtml}
                 </div>
                 <div class="${textStyles}">${htmlContent}</div>
+                ${actionsHtml}
             `;
-            chatBox.insertBefore(row, indicator);
+            chatBox.appendChild(row);
             
-            // Add Copy Buttons to new code blocks
+            // Add Copy Buttons
             if (type !== 'user') {
-                const preBlocks = row.querySelectorAll('pre');
-                preBlocks.forEach(pre => {
-                    const btn = document.createElement('button');
-                    btn.className = 'copy-btn';
-                    btn.innerText = 'Copy';
-                    btn.onclick = () => {
-                        navigator.clipboard.writeText(pre.querySelector('code').innerText);
-                        btn.innerText = 'Copied!';
-                        setTimeout(() => btn.innerText = 'Copy', 2000);
-                    };
+                row.querySelectorAll('pre').forEach(pre => {
+                    const btn = document.createElement('button'); btn.className = 'copy-btn'; btn.innerText = 'Copy';
+                    btn.onclick = () => { navigator.clipboard.writeText(pre.querySelector('code').innerText); btn.innerText = 'Copied!'; setTimeout(() => btn.innerText = 'Copy', 2000); };
                     pre.appendChild(btn);
                 });
             }
