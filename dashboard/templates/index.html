@@ -289,6 +289,12 @@
             scrollToBottom();
         }
 
+        function escapeHTML(str) {
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;");
+        }
+
         function appendMessage(sender, text, type, meta=null) {
             const chatBox = document.getElementById("chatBox");
             const indicator = document.getElementById("typingIndicator");
@@ -296,8 +302,11 @@
             const row = document.createElement("div");
             row.className = `flex flex-col gap-1 w-full ${type === 'user' ? 'items-end' : 'items-start'}`;
             
+            // Escape HTML so tags like <iostream> don't get stripped by the browser
+            let escapedText = escapeHTML(text);
+            
             // Format text
-            let formattedText = text.replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-950 p-4 rounded-xl border border-white/5 my-2 overflow-x-auto text-xs font-mono text-gray-300"><code>$1</code></pre>');
+            let formattedText = escapedText.replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-950 p-4 rounded-xl border border-white/5 my-2 overflow-x-auto text-xs font-mono text-gray-300"><code>$1</code></pre>');
             formattedText = formattedText.replace(/\n/g, '<br>');
 
             let metaHtml = meta ? `<span class="ml-2 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[0.65rem]">${meta}</span>` : '';
