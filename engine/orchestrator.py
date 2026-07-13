@@ -58,7 +58,7 @@ class OmniEngine:
         # OpenRouter specific headers
         if provider_name == "OpenRouter":
             headers["HTTP-Referer"] = "https://github.com/err0rgod/divine"
-            headers["X-Title"] = "Omni-Route"
+            headers["X-Title"] = "Divine"
 
         payload = {
             "model": model_name,
@@ -91,7 +91,7 @@ class OmniEngine:
         last_message = messages[-1]['content'] if messages else ""
         
         meta_prompt = f"""
-You are the Omni-Route Meta-Router. Analyze the user's prompt and pick the absolute best provider and model combination to answer it.
+You are the Divine Meta-Router. Analyze the user's prompt and pick the absolute best provider and model combination to answer it.
 We have access to:
 - Groq (models: llama-3.1-8b-instant, llama-3.3-70b-versatile, mixtral-8x7b-32768) -> Use for speed, casual chat, translation.
 - Mistral (models: codestral-latest, mistral-large-latest) -> Use for heavy coding, scripts, logic.

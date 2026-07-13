@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Omni-Route Intelligence Engine</title>
+    <title>Divine Intelligence Engine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -246,7 +246,7 @@
 <body>
 
     <header>
-        <div class="logo">OMNI-ROUTE ⚡</div>
+        <div class="logo">DIVINE ⚡</div>
         <div class="controls">
             <select id="providerSelect" onchange="updateModels()">
                 {% for provider in providers.keys() %}
@@ -262,7 +262,7 @@
     <main id="chatBox">
         <div class="message ai">
             <div class="msg-meta">System</div>
-            Welcome to the Omni-Route Dashboard. You are connected to 730+ verified endpoints.
+            Welcome to the Divine Dashboard. You are connected to 730+ verified endpoints.
             Select "Auto-Select" to let the Meta-Router automatically route your prompt to the best hardware, or manually select an engine above.
         </div>
         <div id="typingIndicator" class="typing">Meta-Router is processing...</div>
@@ -270,7 +270,7 @@
 
     <div class="input-container">
         <div class="input-wrapper">
-            <textarea id="userInput" placeholder="Ask Omni-Route anything... (Press Enter to send)" onkeydown="if(event.key === 'Enter' && !event.shiftKey){ event.preventDefault(); sendMessage(); }"></textarea>
+            <textarea id="userInput" placeholder="Ask Divine anything... (Press Enter to send)" onkeydown="if(event.key === 'Enter' && !event.shiftKey){ event.preventDefault(); sendMessage(); }"></textarea>
             <button id="sendBtn" onclick="sendMessage()">Send</button>
         </div>
     </div>
@@ -336,7 +336,7 @@
                     let metaText = `Routed via: ${data.provider_used} (${data.model_used})`;
                     if (data.auto_selected) metaText = "⚡ Auto-Routed via: " + data.provider_used + " (" + data.model_used + ")";
                     
-                    appendMessage("Omni-Route", data.reply, "ai", metaText);
+                    appendMessage("Divine", data.reply, "ai", metaText);
                 } else {
                     appendMessage("System Error", data.error, "ai", "Error");
                 }

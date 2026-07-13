@@ -1,7 +1,7 @@
-# Omni-Route & Agent Router Configuration Context
+# Divine & Agent Router Configuration Context
 
 ## 🎯 Goal
-To build **Omni-Route**, a 24/7 autonomous Orchestrator that pools API credits across multiple AI providers, automatically handles rate limits and failovers, and powers our local Agent Router (for Claude Code).
+To build **Divine**, a 24/7 autonomous Orchestrator that pools API credits across multiple AI providers, automatically handles rate limits and failovers, and powers our local Agent Router (for Claude Code).
 
 ## 🏆 Milestones Completed
 1. **Agent Router (Claude Code Proxy):** We successfully built `proxy.py` to transparently intercept, spoof headers, and patch tool-use logic so Claude Code works perfectly with Agent Router.
@@ -35,7 +35,7 @@ Create a central Python class (the "Traffic Cop") to unify all endpoints.
 Wrap all API calls with dynamic fallback logic. If a primary provider hits a `429 Rate Limit` or `402 Insufficient Credits`, the Orchestrator instantly fails over to the next provider in the queue, ensuring 100% uptime and an endless pool of free tokens.
 
 ### Phase 3: Proxy Integration
-Connect the Omni-Route Orchestrator directly to `proxy.py`. The proxy will send basic terminal UI requests to Agent Router but delegate heavy automation/backend tasks to Omni-Route.
+Connect the Divine Orchestrator directly to `proxy.py`. The proxy will send basic terminal UI requests to Agent Router but delegate heavy automation/backend tasks to Divine.
 
 ### Phase 4: 24/7 Autonomous Loop
 Create a persistent daemon/container allowing the agent to continuously pull tasks, research, and execute code 24/7, leveraging the massive pooled rate-limits from Mistral and Groq.

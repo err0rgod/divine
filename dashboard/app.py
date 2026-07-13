@@ -24,7 +24,7 @@ class ChatRequest(BaseModel):
 
 # Hardcoded quick list of top models for the UI dropdown
 UI_PROVIDERS = {
-    "Auto-Select": ["Omni-Route (Meta-Router)"],
+    "Auto-Select": ["Divine (Meta-Router)"],
     "Mistral": ["codestral-latest", "mistral-large-latest", "open-mistral-nemo"],
     "Groq": ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "mixtral-8x7b-32768"],
     "Cerebras": ["llama3.1-8b", "llama3.1-70b"],
