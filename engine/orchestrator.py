@@ -44,8 +44,8 @@ class OmniEngine:
     def __init__(self):
         pass
 
-    def chat(self, provider_name, model_name, messages, max_tokens=1024):
-        """Standardized chat completion across all providers."""
+    def chat(self, provider_name, model_name, messages, max_tokens=1024, auto_failover=True):
+        """Standardized chat completion across all providers with automatic failover."""
         if provider_name not in PROVIDERS:
             raise ValueError(f"Unknown provider: {provider_name}")
 
@@ -98,15 +98,38 @@ class OmniEngine:
                 return {
                     "success": True,
                     "content": reply_text,
-                    "usage": usage
+                    "usage": usage,
+                    "provider": provider_name,
+                    "model": model_name
                 }
             else:
-                return {
-                    "success": False,
-                    "error": f"HTTP {response.status_code}: {response.text}"
-                }
+                error_resp = f"HTTP {response.status_code}: {response.text}"
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            error_resp = str(e)
+            
+        # If we reach here, the request failed.
+        if auto_failover:
+            print(f"[Divine Engine] {provider_name}/{model_name} failed ({error_resp[:100]}). Initiating failover...")
+            fallback_queue = [
+                ("Mistral", "mistral-large-latest"),
+                ("Groq", "llama-3.3-70b-versatile"),
+                ("Google", "gemini-1.5-pro"),
+                ("OpenRouter", "google/gemini-pro")
+            ]
+            
+            # Remove the failed provider from the queue
+            fallback_queue = [p for p in fallback_queue if p[0] != provider_name]
+            
+            for fb_prov, fb_model in fallback_queue:
+                print(f"[Divine Engine] Failing over to {fb_prov}/{fb_model}...")
+                fallback_res = self.chat(fb_prov, fb_model, messages, max_tokens, auto_failover=False)
+                if fallback_res['success']:
+                    fallback_res['failover_occurred'] = True
+                    fallback_res['original_provider'] = provider_name
+                    fallback_res['error_caught'] = error_resp
+                    return fallback_res
+                    
+        return {"success": False, "error": error_resp}
 
     def auto_route(self, messages):
         """

@@ -69,9 +69,11 @@ async def process_chat(req: ChatRequest):
         return {
             "success": True,
             "reply": response["content"],
-            "provider_used": provider,
-            "model_used": model,
+            "provider_used": response["provider"],
+            "model_used": response["model"],
             "auto_selected": auto_selected,
+            "failover_occurred": response.get("failover_occurred", False),
+            "original_provider": response.get("original_provider", ""),
             "usage": response.get("usage", {})
         }
     else:

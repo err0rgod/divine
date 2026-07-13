@@ -268,9 +268,13 @@
                     chatHistory.push({"role": "assistant", "content": data.reply});
                     
                     let metaText = `${latency}s`;
-                    if (data.auto_selected) {
+                    if (data.auto_selected && !data.failover_occurred) {
                         metaText += ` • ${data.provider_used} (${data.model_used})`;
                         addLog(`Routed: ${data.provider_used} -> ${data.model_used}`, "success");
+                    }
+                    if (data.failover_occurred) {
+                        metaText += ` • 🚨 Auto-Recovered via ${data.provider_used} (${data.model_used})`;
+                        addLog(`Failover Success: ${data.original_provider} crashed. Recovered via ${data.provider_used}`, "routing");
                     }
                     
                     addLog(`Res: 200 OK (${latency}s)`, "success");
