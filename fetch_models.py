@@ -7,6 +7,12 @@ load_dotenv('D:/divine/.env')
 
 providers = [
     {
+        "id": "Bluesmind",
+        "url": "https://api.bluesminds.com/v1/models",
+        "headers": {"Authorization": f"Bearer {os.environ.get('BLUESMIND_API_KEY', '')}"},
+        "parser": lambda r: [m['id'] for m in r.json().get('data', [])] if r and r.json().get('data') else [],
+    },
+    {
         "id": "DeepSeek",
         "url": "https://api.deepseek.com/models",
         "headers": {"Authorization": f"Bearer {os.environ.get('DEEPSEEK_API_KEY', '')}"},

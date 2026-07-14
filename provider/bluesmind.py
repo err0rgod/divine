@@ -25,7 +25,8 @@ import requests
 import json
 import sys
 
-API_KEY = os.environ.get("BLUESMIND_API_KEY")
+API_KEY_STRING = os.environ.get("BLUESMIND_API_KEYS", os.environ.get("BLUESMIND_API_KEY", ""))
+KEYS = [k.strip() for k in API_KEY_STRING.split(",") if k.strip()]
 BASE_URL = "https://api.bluesminds.com/v1"
 MODEL = "qwen2.5"
 
@@ -59,10 +60,21 @@ def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
         "messages": conversation,
     }
 
+    import random
+    if not KEYS:
+        print("Error: No Bluesmind API key configured.")
+        return None, conversation
+        
+    selected_key = random.choice(KEYS)
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {selected_key}"
+    }
+
     try:
         response = requests.post(
             f"{BASE_URL}/chat/completions",
-            headers=HEADERS,
+            headers=headers,
             json=payload,
             timeout=120,
         )
@@ -83,16 +95,28 @@ def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
 
 def main():
     """Interactive chat loop for Bluesmind."""
+    global MODEL
+    import json
+    try:
+        with open('../models.json' if os.path.exists('../models.json') else 'models.json', 'r') as f:
+            db = json.load(f)
+            avail = db.get("Bluesmind", [])
+            if avail:
+                print("\nAvailable Models for Bluesmind:")
+                for i, m in enumerate(avail):
+                    print(f"  [{i}] {m}")
+                sel = input(f"\nSelect model number (or press Enter for default '{MODEL}'): ").strip()
+                if sel.isdigit() and int(sel) < len(avail):
+                    MODEL = avail[int(sel)]
+                elif sel:
+                    MODEL = sel
+    except Exception as e:
+        pass
+
     print("=" * 60)
-    print("  Bluesmind Interactive Chat")
+    print(f"  Bluesmind Interactive Chat ({MODEL})")
     print("=" * 60)
-    
-    # Check models
-    print("Fetching available models...")
-    models = get_models()
-    if models:
-        print(f"Available models: {', '.join(models)}")
-    
+    print(f"🚀 Status: Connected. Key Pool Size: {len(KEYS)}")
     print("=" * 60)
     print("  Type 'quit' to exit | 'clear' to reset conversation")
     print("=" * 60)

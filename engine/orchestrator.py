@@ -40,6 +40,7 @@ PROVIDERS = {
     },
     "Bluesmind": {
         "url": "https://api.bluesminds.com/v1/chat/completions",
+        "keys": [k.strip() for k in os.environ.get('BLUESMIND_API_KEYS', os.environ.get('BLUESMIND_API_KEY', '')).split(',') if k.strip()],
         "key": os.environ.get('BLUESMIND_API_KEY')
     },
     "AgentRouter": {
