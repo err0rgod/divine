@@ -237,6 +237,58 @@ async def delete_history(chat_id: str):
         print(f"Error deleting chat {chat_id}: {e}")
         return {"success": False, "error": str(e)}
 
+from engine.state_manager import state_manager
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def get_dashboard_page(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+@app.get("/api/dashboard/stats")
+async def get_dashboard_stats():
+    return JSONResponse(content=state_manager.get_stats())
+
+@app.get("/api/dashboard/keys")
+async def get_dashboard_keys():
+    return JSONResponse(content=state_manager.get_keys())
+
+@app.post("/api/dashboard/keys")
+async def update_dashboard_keys(req: Request):
+    keys_dict = await req.json()
+    state_manager.update_keys(keys_dict)
+    return {"success": True}
+
+@app.post("/api/dashboard/keys/test")
+async def test_dashboard_keys(req: Request):
+    data = await req.json()
+    provider = data.get("provider")
+    
+    # Just run a quick deterministic chat through the orchestrator to test the first available key for this provider
+    messages = [{"role": "user", "content": "Reply with 'OK' and nothing else."}]
+    
+    try:
+        # Since models might vary, we just pick the first model in the routing pool for that provider
+        # Or a safe default model
+        fallback_models = {
+            "Groq": "llama-3.1-8b-instant",
+            "Mistral": "mistral-large-latest",
+            "Cerebras": "llama3.1-8b",
+            "NVIDIA": "meta/llama-3.1-8b-instruct",
+            "Bazaarlink": "auto:free",
+            "Cohere": "command-r-08-2024",
+            "Bluesmind": "meta/llama-3.1-8b-instruct",
+            "AgentRouter": "gpt 5.5",
+            "ForgeAI": "gpt-5.5",
+            "DeepSeek": "deepseek-v4-flash"
+        }
+        
+        test_model = fallback_models.get(provider, "test-model")
+        
+        # Test it directly without failover so we actually test the provider
+        response = engine.chat(provider_name=provider, model_name=test_model, messages=messages, max_tokens=10, auto_failover=False)
+        return {"success": response.get("success", False), "error": response.get("error", "Unknown Error")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)

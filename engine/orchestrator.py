@@ -6,55 +6,21 @@ from dotenv import load_dotenv
 
 load_dotenv('D:/divine/.env')
 
+from engine.state_manager import state_manager
+
+# We will define the base URLs here. The API keys will be fetched dynamically per request from state_manager.
 PROVIDERS = {
-    "Groq": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
-        "key": os.environ.get('GROQ_API_API_KEY')
-    },
-    "Mistral": {
-        "url": "https://api.mistral.ai/v1/chat/completions",
-        "key": os.environ.get('MISTRAL_API_API_KEY')
-    },
-    "Cerebras": {
-        "url": "https://api.cerebras.ai/v1/chat/completions",
-        "key": os.environ.get('CEREBRAS_API_KEY')
-    },
-    "NVIDIA": {
-        "url": "https://integrate.api.nvidia.com/v1/chat/completions",
-        "key": os.environ.get('NVIDIA_NIM_API_KEY')
-    },
-    "Bazaarlink": {
-        "url": "https://bazaarlink.ai/api/v1/chat/completions",
-        "key": os.environ.get('BAZAARLINK_API_API_KEY')
-    },
-    "Cohere": {
-        "url": "https://api.cohere.com/v1/chat",  # Native endpoint
-        "key": os.environ.get('COHERE_API_API_KEY')
-    },
-    "Bluesmind": {
-        "url": "https://api.bluesminds.com/v1/chat/completions",
-        "keys": [k.strip() for k in os.environ.get('BLUESMIND_API_KEYS', os.environ.get('BLUESMIND_API_KEY', '')).split(',') if k.strip()],
-        "key": os.environ.get('BLUESMIND_API_KEY')
-    },
-    "AgentRouter": {
-        "url": "https://agentrouter.org/v1/chat/completions",
-        "key": os.environ.get('AGENT_ROUTER_API_KEY', 'err0rgodv1')
-    },
-    "ForgeAI": {
-        "url": "https://forge-gateway-api.fly.dev/v1/chat/completions",
-        "keys": [k.strip() for k in os.environ.get('FORGE_AI_API_KEYS', os.environ.get('FORGE_AI_API_KEY', '')).split(',') if k.strip()],
-        "key": os.environ.get('FORGE_AI_API_KEY')
-    },
-    "FuturePPO": {
-        "url": "https://api.futureppo.top/v1/chat/completions",
-        "keys": [k.strip() for k in os.environ.get('FUTUREPPO_API_KEYS', os.environ.get('FUTUREPPO_API_KEY', '')).split(',') if k.strip()],
-        "key": os.environ.get('FUTUREPPO_API_KEY')
-    },
-    "DeepSeek": {
-        "url": "https://api.deepseek.com/chat/completions",
-        "keys": [k.strip() for k in os.environ.get('DEEPSEEK_API_KEYS', os.environ.get('DEEPSEEK_API_KEY', '')).split(',') if k.strip()],
-        "key": os.environ.get('DEEPSEEK_API_KEY')
-    }
+    "Groq": {"url": "https://api.groq.com/openai/v1/chat/completions"},
+    "Mistral": {"url": "https://api.mistral.ai/v1/chat/completions"},
+    "Cerebras": {"url": "https://api.cerebras.ai/v1/chat/completions"},
+    "NVIDIA": {"url": "https://integrate.api.nvidia.com/v1/chat/completions"},
+    "Bazaarlink": {"url": "https://bazaarlink.ai/api/v1/chat/completions"},
+    "Cohere": {"url": "https://api.cohere.com/v1/chat"},
+    "Bluesmind": {"url": "https://api.bluesminds.com/v1/chat/completions"},
+    "AgentRouter": {"url": "https://agentrouter.org/v1/chat/completions"},
+    "ForgeAI": {"url": "https://forge-gateway-api.fly.dev/v1/chat/completions"},
+    "FuturePPO": {"url": "https://api.futureppo.top/v1/chat/completions"},
+    "DeepSeek": {"url": "https://api.deepseek.com/chat/completions"}
 }
 
 ROUTING_POOLS = {
@@ -152,9 +118,10 @@ class OmniEngine:
 
         prov = PROVIDERS[provider_name]
         
-        # Support multiple API keys for load balancing
-        keys = prov.get('keys', [prov.get('key')])
-        if not keys or not keys[0]:
+        # Support multiple API keys dynamically from state manager
+        keys_dict = state_manager.get_keys()
+        keys = keys_dict.get(provider_name, [])
+        if not keys:
             raise ValueError(f"No API key configured for {provider_name}")
             
         selected_key = random.choice(keys).strip()
@@ -207,9 +174,15 @@ class OmniEngine:
                 if provider_name == "Cohere":
                     reply_text = data.get("text", "")
                     usage = data.get("meta", {}).get("tokens", {})
+                    total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
                 else:
                     reply_text = data['choices'][0]['message']['content']
                     usage = data.get('usage', {})
+                    total_tokens = usage.get('total_tokens', 0)
+                    
+                # Track usage dynamically
+                if total_tokens > 0:
+                    state_manager.add_usage(provider_name, model_name, total_tokens)
                     
                 return {
                     "success": True,
@@ -225,7 +198,8 @@ class OmniEngine:
             
         # If we reach here, the request failed.
         if auto_failover:
-            print(f"[Divine Engine] {provider_name}/{model_name} failed ({error_resp[:100]}). Initiating failover...")
+            safe_error = error_resp[:100].encode('ascii', 'replace').decode('ascii')
+            print(f"[Divine Engine] {provider_name}/{model_name} failed ({safe_error}). Initiating failover...")
             fallback_queue = [
                 ("Mistral", "mistral-large-latest"),
                 ("Groq", "llama-3.3-70b-versatile"),
