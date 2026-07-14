@@ -7,6 +7,18 @@ load_dotenv('D:/divine/.env')
 
 providers = [
     {
+        "id": "AgentRouter",
+        "url": "https://agentrouter.org/v1/models",
+        "headers": {
+            "Authorization": f"Bearer {os.environ.get('AGENT_ROUTER_API_KEY', '')}",
+            "User-Agent": "codex_cli_rs/0.101.0 (Windows NT 10.0; x86_64)",
+            "Originator": "codex_cli_rs",
+            "Version": "0.101.0",
+            "anthropic-version": "2023-06-01"
+        },
+        "parser": lambda r: [m['id'] for m in r.json().get('data', [])],
+    },
+    {
         "id": "Groq",
         "url": "https://api.groq.com/openai/v1/models",
         "headers": {"Authorization": f"Bearer {os.environ.get('GROQ_API_API_KEY', '')}"},

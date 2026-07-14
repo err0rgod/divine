@@ -2,6 +2,13 @@
     "Auto-Select": [
         "Divine (Meta-Router)"
     ],
+    "AgentRouter": [
+        "claude-opus-4-6",
+        "claude-opus-4-7",
+        "claude-opus-4-8",
+        "glm-5.2",
+        "gpt-5.5"
+    ],
     "Groq": [
         "allam-2-7b",
         "canopylabs/orpheus-arabic-saudi",
@@ -121,8 +128,6 @@
         "google/gemma-4-31b-it:free",
         "google/lyria-3-clip-preview",
         "google/lyria-3-pro-preview",
-        "liquid/lfm-2.5-1.2b-instruct:free",
-        "liquid/lfm-2.5-1.2b-thinking:free",
         "meta-llama/llama-3.2-3b-instruct:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "nousresearch/hermes-3-llama-3.1-405b:free",
@@ -133,7 +138,6 @@
         "nvidia/nemotron-3.5-content-safety:free",
         "nvidia/nemotron-nano-12b-v2-vl:free",
         "nvidia/nemotron-nano-9b-v2:free",
-        "openai/gpt-oss-120b:free",
         "openai/gpt-oss-20b:free",
         "openrouter/free",
         "poolside/laguna-m.1:free",
@@ -173,6 +177,7 @@
         "ibm/granite-8b-code-instruct",
         "meta/codellama-70b",
         "meta/llama-3.1-70b-instruct",
+        "meta/llama-3.1-8b-instruct",
         "meta/llama-3.2-11b-vision-instruct",
         "meta/llama-3.2-1b-instruct",
         "meta/llama-3.2-3b-instruct",
@@ -304,18 +309,5 @@
         "lyria-3-clip-preview",
         "lyria-3-pro-preview",
         "nano-banana-pro-preview"
-    ],
-    "Bluesmind": [
-        "qwen2.5",
-        "qwen3.6-35b-coding",
-        "qwen3.6-35b-fp8",
-        "rollama3-8b"
-    ],
-    "AgentRouter": [
-        "claude-opus-4-8",
-        "claude-opus-4-6",
-        "claude-opus-4-7",
-        "gpt-5.5",
-        "glm-5.2"
     ]
 }
