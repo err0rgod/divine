@@ -19,8 +19,10 @@ To build **Divine**, a 24/7 autonomous Orchestrator that pools API credits acros
 
 ## 📁 Repository Structure
 * `proxy.py`: Transparent interceptor proxy for Claude Code (spoofs headers, patches JSON tool-calls).
-* `provider/`: Directory containing standalone test scripts for all verified API providers.
-* `models.txt`: A dynamically generated manifest listing all 730+ verified models.
+* `provider/`: Directory containing legacy standalone test scripts for all verified API providers (restored per user request).
+* `engine/`: The unified core orchestrator (`orchestrator.py`), token persistence tracking (`state_manager.py`), and tool execution modules (`agent_tools.py`).
+* `frontend/`: FastAPI backend (`app.py`) and sleek Tailwind CSS UI (`templates/index.html`, `templates/dashboard.html`) for configuration and chatting.
+* `models.json`: A dynamically generated manifest listing all verified models per provider.
 * `.env`: (Ignored by Git) Contains all API keys.
 * `context.md`: This architecture and goal documentation.
 

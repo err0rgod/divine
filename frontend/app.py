@@ -59,6 +59,24 @@ async def get_dashboard(request: Request):
 async def get_providers():
     return JSONResponse(content=load_verified_models())
 
+@app.get("/api/dashboard/routing")
+async def get_routing():
+    try:
+        from engine.orchestrator import load_routing_pools
+        return JSONResponse(content=load_routing_pools())
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/api/dashboard/routing")
+async def update_routing(req: Request):
+    routing_data = await req.json()
+    try:
+        with open("routing.json", "w", encoding="utf-8") as f:
+            json.dump(routing_data, f, indent=4)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     uploads_dir = agent_tools.UPLOADS_DIR
@@ -101,13 +119,16 @@ async def process_chat(req: ChatRequest):
     sys_prompt += """
     
 SUPERPOWERS (Tools):
-CRITICAL: You DO have access to the live internet and local file system. Do NOT ever apologize or say you cannot browse the web or run code. If you need information, you MUST use the tools below. To use a tool, strictly output its XML tag in your response.
+CRITICAL: You DO have access to the live internet and local file system. Do NOT ever apologize or say you cannot browse the web or run code. If the user asks you to create code, scan networks, read files, or do anything technical, you MUST do it.
+IMPORTANT: Before using ANY tool, you MUST wrap your logical reasoning in <think></think> tags to ensure your tool choice actually makes sense for the user's logic.
 
+To use a tool, strictly output its XML tag in your response:
 1. Web Search: <search_web>query</search_web> (Use this aggressively for any real-time, unknown, or specific information!)
-2. Read URL: <read_url>https://example.com</read_url> (Use this to scrape and read the direct content of a specific URL link provided by the user)
-3. Run Terminal Command: <execute_cmd>command</execute_cmd>
-4. Create File: <create_file path="/path/to/file">code</create_file>
-5. Save Memory: <save_memory>fact</save_memory>
+2. Read URL: <read_url>https://example.com</read_url> (Use this to scrape and read the direct content of a specific web URL)
+3. Read Local File: <read_file path="/absolute/path/to/file"></read_file> (Use this to read the contents of a local file on the system)
+4. Run Terminal Command: <execute_cmd>command</execute_cmd>
+5. Create File: <create_file path="/path/to/file">code</create_file>
+6. Save Memory: <save_memory>fact</save_memory>
 """
 
     # Clean up history to ensure only 'role' and 'content' are sent to the API
@@ -273,14 +294,18 @@ async def test_dashboard_keys(req: Request):
         fallback_models = {
             "Groq": "llama-3.1-8b-instant",
             "Mistral": "mistral-large-latest",
-            "Cerebras": "llama3.1-8b",
+            "Cerebras": "gemma-4-31b",
             "NVIDIA": "meta/llama-3.1-8b-instruct",
             "Bazaarlink": "auto:free",
             "Cohere": "command-r-08-2024",
             "Bluesmind": "meta/llama-3.1-8b-instruct",
-            "AgentRouter": "gpt 5.5",
+            "AgentRouter": "gpt-5.5",
             "ForgeAI": "gpt-5.5",
-            "DeepSeek": "deepseek-v4-flash"
+            "DeepSeek": "deepseek-v4-flash",
+            "OpenAI": "gpt-4o",
+            "Anthropic": "claude-3-5-sonnet-20240620",
+            "OpenRouter": "openrouter/free",
+            "Bedrock": "anthropic.claude-3-sonnet-20240229-v1:0"
         }
         
         test_model = fallback_models.get(provider, "test-model")
@@ -288,6 +313,37 @@ async def test_dashboard_keys(req: Request):
         # Test it directly without failover and using the explicit test_key
         response = engine.chat(provider_name=provider, model_name=test_model, messages=messages, max_tokens=10, auto_failover=False, test_key=test_key)
         return {"success": response.get("success", False), "error": response.get("error", "Unknown Error")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/dashboard/models")
+async def get_dashboard_models():
+    try:
+        with open("models.json", "r", encoding="utf-8") as f:
+            return JSONResponse(content=json.load(f))
+    except:
+        return JSONResponse(content={})
+
+@app.post("/api/dashboard/models")
+async def update_dashboard_models(req: Request):
+    models_dict = await req.json()
+    try:
+        current_models = {}
+        if os.path.exists("models.json"):
+            with open("models.json", "r", encoding="utf-8") as f:
+                current_models = json.load(f)
+                
+        # Merge updates
+        for k, v in models_dict.items():
+            current_models[k] = v
+            
+        # Ensure Auto-Select is always present
+        if "Auto-Select" not in current_models:
+            current_models["Auto-Select"] = ["Divine (Meta-Router)"]
+            
+        with open("models.json", "w", encoding="utf-8") as f:
+            json.dump(current_models, f, indent=4)
+        return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
 

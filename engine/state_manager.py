@@ -16,12 +16,43 @@ class StateManager:
             from dotenv import dotenv_values
             env_vars = dotenv_values("D:/divine/.env")
             initial_keys = {}
+            
+            # Map of known prefixes to correct provider names
+            env_mapping = {
+                "GROQ": "Groq",
+                "MISTRAL": "Mistral",
+                "CEREBRAS": "Cerebras",
+                "NVIDIA": "NVIDIA",
+                "BAZAARLINK": "Bazaarlink",
+                "COHERE": "Cohere",
+                "BLUESMIND": "Bluesmind",
+                "AGENT_ROUTER": "AgentRouter",
+                "FORGE_AI": "ForgeAI",
+                "FUTUREPPO": "FuturePPO",
+                "DEEPSEEK": "DeepSeek",
+                "EXA": "Exa",
+                "FIRECRAWL": "Firecrawl",
+                "JINA": "Jina"
+            }
+            
             for k, v in env_vars.items():
                 if "API_KEY" in k and v:
-                    provider = k.split("_")[0].capitalize()
-                    if provider not in initial_keys:
-                        initial_keys[provider] = []
-                    initial_keys[provider].extend([x.strip() for x in v.split(",") if x.strip()])
+                    # Find matching provider
+                    provider_name = None
+                    for prefix, name in env_mapping.items():
+                        if k.startswith(prefix):
+                            provider_name = name
+                            break
+                    
+                    if provider_name:
+                        if provider_name not in initial_keys:
+                            initial_keys[provider_name] = []
+                        
+                        # Avoid duplicates
+                        new_keys = [x.strip() for x in v.split(",") if x.strip()]
+                        for key in new_keys:
+                            if key not in initial_keys[provider_name]:
+                                initial_keys[provider_name].append(key)
             
             with open(CONFIG_FILE, 'w') as f:
                 json.dump({"keys": initial_keys}, f, indent=4)

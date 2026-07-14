@@ -133,6 +133,21 @@ def parse_and_execute_tags(response_text: str) -> Dict[str, Any]:
         res = create_file(path, content)
         results[f"File Created: {path}"] = res
         
+    # 5. Read Local File
+    read_file_matches = re.finditer(r'<read_file\s+path=["\'](.*?)["\']>.*?</read_file>', response_text, re.DOTALL)
+    for match in read_file_matches:
+        path = match.group(1).strip()
+        res = extract_file_content(path)
+        results[f"Read File: {path}"] = res
+        
+    # Also support <read_file path="..."> without inner content just in case the LLM writes it like <read_file path="..."/>
+    read_file_self_closing = re.finditer(r'<read_file\s+path=["\'](.*?)["\']\s*/?>', response_text)
+    for match in read_file_self_closing:
+        path = match.group(1).strip()
+        if f"Read File: {path}" not in results:
+            res = extract_file_content(path)
+            results[f"Read File: {path}"] = res
+        
     # 4. Save Memory
     mem_matches = re.finditer(r'<save_memory>(.*?)</save_memory>', response_text, re.DOTALL)
     for match in mem_matches:

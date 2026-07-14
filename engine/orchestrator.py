@@ -19,11 +19,14 @@ PROVIDERS = {
     "Bluesmind": {"url": "https://api.bluesminds.com/v1/chat/completions"},
     "AgentRouter": {"url": "https://agentrouter.org/v1/chat/completions"},
     "ForgeAI": {"url": "https://forge-gateway-api.fly.dev/v1/chat/completions"},
-    "FuturePPO": {"url": "https://api.futureppo.top/v1/chat/completions"},
-    "DeepSeek": {"url": "https://api.deepseek.com/chat/completions"}
+    "DeepSeek": {"url": "https://api.deepseek.com/chat/completions"},
+    "OpenAI": {"url": "https://api.openai.com/v1/chat/completions"},
+    "Anthropic": {"url": "https://api.anthropic.com/v1/messages"},
+    "OpenRouter": {"url": "https://openrouter.ai/api/v1/chat/completions"},
+    "Bedrock": {"url": "https://bedrock.proxy/api/v1/chat/completions"}
 }
 
-ROUTING_POOLS = {
+DEFAULT_ROUTING_POOLS = {
     "coding": [
         ("Mistral", "codestral-latest"),
         ("Mistral", "mistral-large-latest"),
@@ -58,6 +61,15 @@ ROUTING_POOLS = {
         ("Bluesmind", "meta/llama-3.1-8b-instruct")
     ]
 }
+
+def load_routing_pools():
+    try:
+        if os.path.exists("routing.json"):
+            with open("routing.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return DEFAULT_ROUTING_POOLS
 
 class OmniEngine:
     def __init__(self):
@@ -231,7 +243,8 @@ class OmniEngine:
         The Intelligent Router. Routes requests to optimal model pools using
         a round-robin/random choice selection to evenly distribute load among the best models.
         """
-        if force_task_type and force_task_type in ROUTING_POOLS:
+        routing_pools = load_routing_pools()
+        if force_task_type and force_task_type in routing_pools:
             task_type = force_task_type
         else:
             # Use Groq to classify the task rapidly
@@ -264,11 +277,15 @@ Reply STRICTLY in JSON format with exactly one key "task_type". Example:
                 except json.JSONDecodeError:
                     pass
                     
-            if task_type not in ROUTING_POOLS:
+            if task_type not in routing_pools:
                 task_type = "fast"
 
-        pool = ROUTING_POOLS[task_type]
-        provider, model = random.choice(pool)
-        return provider, model
+        pool = routing_pools.get(task_type, [])
+        if not pool:
+             # Ultimate fallback
+             return "Mistral", "codestral-latest"
+             
+        choice = random.choice(pool)
+        return choice[0], choice[1]
 
 engine = OmniEngine()

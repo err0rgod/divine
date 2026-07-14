@@ -5,3 +5,6 @@ __pycache__
 .env
 context
 chats.json
+
+dashboard_config.json
+routing.json
