@@ -7,6 +7,12 @@ load_dotenv('D:/divine/.env')
 
 providers = [
     {
+        "id": "ForgeAI",
+        "url": "https://forge-gateway-api.fly.dev/v1/models",
+        "headers": {"Authorization": f"Bearer {os.environ.get('FORGE_AI_API_KEY', '')}"},
+        "parser": lambda r: [m['id'] for m in r.json().get('data', [])],
+    },
+    {
         "id": "AgentRouter",
         "url": "https://agentrouter.org/v1/models",
         "headers": {

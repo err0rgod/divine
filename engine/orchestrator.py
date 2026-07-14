@@ -45,6 +45,10 @@ PROVIDERS = {
     "AgentRouter": {
         "url": "https://agentrouter.org/v1/chat/completions",
         "key": os.environ.get('AGENT_ROUTER_API_KEY', 'err0rgodv1')
+    },
+    "ForgeAI": {
+        "url": "https://forge-gateway-api.fly.dev/v1/chat/completions",
+        "key": os.environ.get('FORGE_AI_API_KEY')
     }
 }
 
