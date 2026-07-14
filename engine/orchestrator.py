@@ -111,7 +111,7 @@ class OmniEngine:
             pass
         return {"source": "none", "content": None}
 
-    def chat(self, provider_name, model_name, messages, max_tokens=1024, auto_failover=True):
+    def chat(self, provider_name, model_name, messages, max_tokens=1024, auto_failover=True, test_key=None):
         """Standardized chat completion across all providers with automatic failover."""
         if provider_name not in PROVIDERS:
             raise ValueError(f"Unknown provider: {provider_name}")
@@ -119,12 +119,14 @@ class OmniEngine:
         prov = PROVIDERS[provider_name]
         
         # Support multiple API keys dynamically from state manager
-        keys_dict = state_manager.get_keys()
-        keys = keys_dict.get(provider_name, [])
-        if not keys:
-            raise ValueError(f"No API key configured for {provider_name}")
-            
-        selected_key = random.choice(keys).strip()
+        if test_key:
+            selected_key = test_key.strip()
+        else:
+            keys_dict = state_manager.get_keys()
+            keys = keys_dict.get(provider_name, [])
+            if not keys:
+                raise ValueError(f"No API key configured for {provider_name}")
+            selected_key = random.choice(keys).strip()
         
         headers = {
             "Content-Type": "application/json",

@@ -261,13 +261,15 @@ async def update_dashboard_keys(req: Request):
 async def test_dashboard_keys(req: Request):
     data = await req.json()
     provider = data.get("provider")
+    test_key = data.get("key") # Get the specific key to test
     
-    # Just run a quick deterministic chat through the orchestrator to test the first available key for this provider
+    if not test_key:
+        return {"success": False, "error": "No key provided to test"}
+
+    # Just run a quick deterministic chat through the orchestrator to test this key
     messages = [{"role": "user", "content": "Reply with 'OK' and nothing else."}]
     
     try:
-        # Since models might vary, we just pick the first model in the routing pool for that provider
-        # Or a safe default model
         fallback_models = {
             "Groq": "llama-3.1-8b-instant",
             "Mistral": "mistral-large-latest",
@@ -283,8 +285,8 @@ async def test_dashboard_keys(req: Request):
         
         test_model = fallback_models.get(provider, "test-model")
         
-        # Test it directly without failover so we actually test the provider
-        response = engine.chat(provider_name=provider, model_name=test_model, messages=messages, max_tokens=10, auto_failover=False)
+        # Test it directly without failover and using the explicit test_key
+        response = engine.chat(provider_name=provider, model_name=test_model, messages=messages, max_tokens=10, auto_failover=False, test_key=test_key)
         return {"success": response.get("success", False), "error": response.get("error", "Unknown Error")}
     except Exception as e:
         return {"success": False, "error": str(e)}

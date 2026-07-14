@@ -1,235 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Divine Dashboard</title>
+    <title>Divine | API Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        zinc: { 50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 300: '#d4d4d8', 400: '#a1a1aa', 500: '#71717a', 600: '#52525b', 700: '#3f3f46', 800: '#27272a', 900: '#18181b', 950: '#09090b' }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-
-        :root {
-            --bg-grad: linear-gradient(135deg, #0f172a 0%, #020617 100%);
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            --accent-cyan: #06b6d4;
-            --accent-purple: #8b5cf6;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-grad);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Navbar */
-        nav {
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--glass-border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .logo {
-            font-weight: 800;
-            font-size: 1.5rem;
-            letter-spacing: -0.5px;
-            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        nav a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s ease;
-        }
-
-        nav a:hover {
-            color: var(--text-main);
-        }
-
-        /* Layout */
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        /* Stats Section */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 32px;
-            box-shadow: var(--glass-shadow);
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Glowing orb effect behind stats */
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: -50px;
-            right: -50px;
-            width: 100px;
-            height: 100px;
-            background: var(--accent-purple);
-            filter: blur(60px);
-            opacity: 0.3;
-            border-radius: 50%;
-        }
-
-        .stat-card:nth-child(2)::before {
-            background: var(--accent-cyan);
-        }
-
-        .stat-card:nth-child(3)::before {
-            background: #10b981; /* Green for money */
-        }
-
-        .stat-title {
-            font-size: 1rem;
-            color: var(--text-muted);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-        }
-
-        .stat-value {
-            font-size: 3rem;
-            font-weight: 800;
-            margin: 0;
-        }
-
-        /* Keys Section */
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .section-title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin: 0;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: opacity 0.3s ease, transform 0.2s ease;
-            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-        }
-
-        .btn-primary:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-
-        .keys-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 24px;
-        }
-
-        .key-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: var(--glass-shadow);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .key-provider-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0 0 16px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .key-textarea {
-            width: 100%;
-            height: 100px;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            color: #10b981; /* Hacker green for keys */
-            font-family: monospace;
-            padding: 12px;
-            box-sizing: border-box;
-            resize: vertical;
-            outline: none;
-            transition: border-color 0.3s ease;
-        }
-
-        .key-textarea:focus {
-            border-color: var(--accent-cyan);
-        }
-
-        .key-help {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 8px;
-        }
-
+        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
         #toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--accent-cyan);
-            color: #000;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
             transform: translateY(100px);
             opacity: 0;
             transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 1000;
         }
 
         #toast.show {
@@ -238,51 +36,96 @@
         }
     </style>
 </head>
-<body>
+<body class="bg-zinc-50 text-zinc-900 dark:bg-[#09090b] dark:text-zinc-100 min-h-screen flex flex-col font-sans transition-colors duration-300">
 
-    <nav>
-        <div class="logo">Divine Dashboard</div>
-        <a href="/">← Back to Chat</a>
-    </nav>
-
-    <div class="container">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-title">Total Tokens Used</div>
-                <div class="stat-value" id="val-tokens">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Total API Requests</div>
-                <div class="stat-value" id="val-requests">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Money Saved</div>
-                <div class="stat-value" style="color: #10b981;">$<span id="val-savings">0.00</span></div>
-            </div>
+    <!-- Navbar -->
+    <header class="h-16 flex items-center justify-between px-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 sticky top-0 z-10 backdrop-blur-sm">
+        <div class="flex items-center gap-4">
+            <a href="/" class="p-2 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Back to Chat">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </a>
+            <h1 class="font-semibold text-lg tracking-tight">API Dashboard</h1>
         </div>
-
-        <div class="section-header">
-            <h2 class="section-title">API Key Management</h2>
-            <button class="btn-primary" onclick="saveKeys()">Save & Sync Keys</button>
+        <div>
+            <button onclick="toggleTheme()" class="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                <svg id="themeIconDark" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg id="themeIconLight" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto p-6 md:p-8 flex flex-col gap-8">
         
-        <p style="color: var(--text-muted); margin-bottom: 24px;">Enter one API key per line. The router will randomly pick from these keys for load balancing. Reorder them as you see fit.</p>
+        <!-- Stats Section -->
+        <section>
+            <h2 class="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">System Metrics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm">
+                    <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-2 font-medium">Total Tokens Used</div>
+                    <div class="text-3xl font-bold font-mono tracking-tight" id="val-tokens">0</div>
+                </div>
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm">
+                    <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-2 font-medium">Total API Requests</div>
+                    <div class="text-3xl font-bold font-mono tracking-tight" id="val-requests">0</div>
+                </div>
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm">
+                    <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-2 font-medium">Estimated Money Saved</div>
+                    <div class="text-3xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">$<span id="val-savings">0.00</span></div>
+                </div>
+            </div>
+        </section>
 
-        <div class="keys-grid" id="keys-container">
-            <!-- Populated by JS -->
-        </div>
+        <!-- Keys Section -->
+        <section>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Key Management</h2>
+                <button onclick="saveKeys()" class="bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    Save & Sync Keys
+                </button>
+            </div>
+            
+            <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6 max-w-2xl">
+                Manage your API keys below. You can enter multiple keys (one per line) for any provider. The OmniEngine router will automatically and randomly load-balance requests across all available keys for a given provider.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="keys-container">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-emerald-500 text-white px-4 py-3 rounded-lg shadow-lg font-medium flex items-center gap-2 pointer-events-none z-50">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        Keys saved successfully!
     </div>
 
-    <div id="toast">Keys Saved Successfully!</div>
-
     <script>
+        // Theme init
+        if (localStorage.theme === 'light' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        }
+
         // Fetch stats
         fetch('/api/dashboard/stats')
             .then(res => res.json())
             .then(data => {
-                document.getElementById('val-tokens').innerText = data.total_tokens.toLocaleString();
-                document.getElementById('val-requests').innerText = data.requests_made.toLocaleString();
-                document.getElementById('val-savings').innerText = parseFloat(data.total_savings_usd).toFixed(2);
+                document.getElementById('val-tokens').innerText = (data.total_tokens || 0).toLocaleString();
+                document.getElementById('val-requests').innerText = (data.requests_made || 0).toLocaleString();
+                document.getElementById('val-savings').innerText = parseFloat(data.total_savings_usd || 0).toFixed(2);
             });
 
         // Fetch keys
@@ -290,37 +133,35 @@
             .then(res => res.json())
             .then(keysDict => {
                 const container = document.getElementById('keys-container');
-                
-                // Providers we care about managing
                 const providers = ["Mistral", "Groq", "Cerebras", "NVIDIA", "Bazaarlink", "Cohere", "Bluesmind", "AgentRouter", "ForgeAI", "FuturePPO", "DeepSeek", "Exa", "Firecrawl", "Jina"];
                 
-                // Merge known providers with any existing ones in keysDict
                 Object.keys(keysDict).forEach(k => {
                     if(!providers.includes(k)) providers.push(k);
                 });
 
                 providers.forEach(provider => {
                     const card = document.createElement('div');
-                    card.className = 'key-card';
+                    card.className = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm flex flex-col focus-within:ring-2 focus-within:ring-indigo-500/50 transition-shadow';
                     
-                    const titleDiv = document.createElement('div');
-                    titleDiv.className = 'key-provider-title';
+                    const header = document.createElement('div');
+                    header.className = 'flex items-center justify-between mb-3';
                     
-                    const title = document.createElement('span');
+                    const title = document.createElement('h3');
+                    title.className = 'font-medium text-zinc-900 dark:text-zinc-100';
                     title.innerText = provider;
                     
                     const testBtn = document.createElement('button');
-                    testBtn.innerText = 'Test Keys';
-                    testBtn.style.cssText = 'background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; cursor: pointer;';
+                    testBtn.className = 'text-xs font-medium px-2 py-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors outline-none';
+                    testBtn.innerText = 'Test';
                     testBtn.onclick = () => testProvider(provider, testBtn);
                     
-                    titleDiv.appendChild(title);
-                    if(provider !== "Exa" && provider !== "Firecrawl" && provider !== "Jina" && provider !== "FuturePPO") {
-                        titleDiv.appendChild(testBtn);
+                    header.appendChild(title);
+                    if(!["Exa", "Firecrawl", "Jina", "FuturePPO"].includes(provider)) {
+                        header.appendChild(testBtn);
                     }
                     
                     const textarea = document.createElement('textarea');
-                    textarea.className = 'key-textarea';
+                    textarea.className = 'w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-sm font-mono text-zinc-700 dark:text-zinc-300 outline-none resize-y min-h-[80px] leading-relaxed';
                     textarea.id = `key-${provider}`;
                     textarea.placeholder = "Enter keys here (one per line)";
                     
@@ -328,53 +169,61 @@
                         textarea.value = keysDict[provider].join('\n');
                     }
                     
-                    const help = document.createElement('div');
-                    help.className = 'key-help';
-                    help.innerText = "1 key per line. Router randomly balances load.";
-
-                    card.appendChild(titleDiv);
+                    card.appendChild(header);
                     card.appendChild(textarea);
-                    card.appendChild(help);
                     container.appendChild(card);
                 });
             });
 
-        // Test Provider
+        // Test Provider API Key
         function testProvider(provider, btn) {
-            btn.innerText = "Testing...";
+            const textarea = document.getElementById(`key-${provider}`);
+            const rawKeys = textarea.value.split('\n').map(k => k.trim()).filter(k => k.length > 0);
+            
+            if (rawKeys.length === 0) {
+                alert("Please enter at least one key to test.");
+                return;
+            }
+            
+            // We test the very first key in the list currently typed in the box
+            const keyToTest = rawKeys[0];
+
+            btn.innerText = "Wait...";
+            btn.className = 'text-xs font-medium px-2 py-1 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 cursor-not-allowed';
+
             fetch('/api/dashboard/keys/test', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ provider })
+                body: JSON.stringify({ provider: provider, key: keyToTest })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    btn.innerText = "✅ Passed";
-                    btn.style.background = "rgba(16, 185, 129, 0.2)";
-                    btn.style.color = "#10b981";
-                    btn.style.borderColor = "#10b981";
+                    btn.innerText = "Passed";
+                    btn.className = 'text-xs font-medium px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
                 } else {
-                    btn.innerText = "❌ Failed";
-                    btn.style.background = "rgba(239, 68, 68, 0.2)";
-                    btn.style.color = "#ef4444";
-                    btn.style.borderColor = "#ef4444";
-                    alert(provider + " Test Failed:\n" + data.error);
+                    btn.innerText = "Failed";
+                    btn.className = 'text-xs font-medium px-2 py-1 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+                    console.error("Test Failed:", data.error);
+                    alert(`${provider} Test Failed:\n${data.error}`);
                 }
+                
+                // Reset button after a few seconds
                 setTimeout(() => {
-                    btn.innerText = "Test Keys";
-                    btn.style.cssText = 'background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; cursor: pointer;';
-                }, 5000);
+                    btn.innerText = "Test";
+                    btn.className = 'text-xs font-medium px-2 py-1 rounded bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors';
+                }, 4000);
             })
             .catch(err => {
                 btn.innerText = "Error";
+                btn.className = 'text-xs font-medium px-2 py-1 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
             });
         }
 
         // Save keys
         function saveKeys() {
             const keysDict = {};
-            const textareas = document.querySelectorAll('.key-textarea');
+            const textareas = document.querySelectorAll('textarea[id^="key-"]');
             
             textareas.forEach(ta => {
                 const provider = ta.id.replace('key-', '');
