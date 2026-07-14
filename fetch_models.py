@@ -115,7 +115,7 @@ def main():
             print(f"  Connection failed: {e}")
             model_catalog[provider_id] = []
             
-    with open('D:/divine/models.json', 'w', encoding='utf-8') as f:
+    with open('D:/divine/config/models.json', 'w', encoding='utf-8') as f:
         json.dump(model_catalog, f, indent=4)
         
     print("Successfully generated models.json!")

@@ -32,19 +32,18 @@ agent_logs = {}
 import json
 
 def load_verified_models():
-    """Dynamically parses models.json to ensure only verified, online models are selectable."""
+    """Dynamically parses config/models.json to ensure only verified, online models are selectable."""
     try:
-        with open("models.json", "r", encoding="utf-8") as f:
-            providers_map = json.load(f)
+        with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
+            return json.load(f)
     except Exception as e:
-        print(f"Error loading models.json: {e}")
+        print(f"Error loading config/models.json: {e}")
         # Ultimate fallback
         providers_map = {
             "Auto-Select": ["Divine (Meta-Router)"],
             "Mistral": ["codestral-latest", "mistral-large-latest"]
         }
-        
-    return providers_map
+        return providers_map
 
 # Load dynamically on startup
 UI_PROVIDERS = load_verified_models()
@@ -71,7 +70,7 @@ async def get_routing():
 async def update_routing(req: Request):
     routing_data = await req.json()
     try:
-        with open("routing.json", "w", encoding="utf-8") as f:
+        with open("D:/divine/config/routing.json", "w", encoding="utf-8") as f:
             json.dump(routing_data, f, indent=4)
         return {"success": True}
     except Exception as e:
@@ -319,7 +318,7 @@ async def test_dashboard_keys(req: Request):
 @app.get("/api/dashboard/models")
 async def get_dashboard_models():
     try:
-        with open("models.json", "r", encoding="utf-8") as f:
+        with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
             return JSONResponse(content=json.load(f))
     except:
         return JSONResponse(content={})
@@ -328,21 +327,21 @@ async def get_dashboard_models():
 async def update_dashboard_models(req: Request):
     models_dict = await req.json()
     try:
-        current_models = {}
-        if os.path.exists("models.json"):
-            with open("models.json", "r", encoding="utf-8") as f:
-                current_models = json.load(f)
-                
-        # Merge updates
+        # Load existing models.json to merge instead of overwrite
+        existing = {}
+        if os.path.exists("D:/divine/config/models.json"):
+            with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
+                try:
+                    existing = json.load(f)
+                except:
+                    pass
+        
+        # Merge new configurations with existing (keeps Auto-Select, etc.)
         for k, v in models_dict.items():
-            current_models[k] = v
-            
-        # Ensure Auto-Select is always present
-        if "Auto-Select" not in current_models:
-            current_models["Auto-Select"] = ["Divine (Meta-Router)"]
-            
-        with open("models.json", "w", encoding="utf-8") as f:
-            json.dump(current_models, f, indent=4)
+            existing[k] = v
+
+        with open("D:/divine/config/models.json", "w", encoding="utf-8") as f:
+            json.dump(existing, f, indent=4)
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}

@@ -64,8 +64,8 @@ DEFAULT_ROUTING_POOLS = {
 
 def load_routing_pools():
     try:
-        if os.path.exists("routing.json"):
-            with open("routing.json", "r", encoding="utf-8") as f:
+        if os.path.exists("D:/divine/config/routing.json"):
+            with open("D:/divine/config/routing.json", "r", encoding="utf-8") as f:
                 return json.load(f)
     except Exception:
         pass

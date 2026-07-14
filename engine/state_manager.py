@@ -2,8 +2,8 @@ import json
 import os
 from threading import Lock
 
-CONFIG_FILE = "D:/divine/dashboard_config.json"
-STATS_FILE = "D:/divine/dashboard_stats.json"
+CONFIG_FILE = "D:/divine/config/dashboard_config.json"
+STATS_FILE = "D:/divine/config/dashboard_stats.json"
 
 class StateManager:
     def __init__(self):
