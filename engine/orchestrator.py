@@ -48,6 +48,7 @@ PROVIDERS = {
     },
     "ForgeAI": {
         "url": "https://forge-gateway-api.fly.dev/v1/chat/completions",
+        "keys": [k.strip() for k in os.environ.get('FORGE_AI_API_KEYS', os.environ.get('FORGE_AI_API_KEY', '')).split(',') if k.strip()],
         "key": os.environ.get('FORGE_AI_API_KEY')
     }
 }
@@ -62,9 +63,18 @@ class OmniEngine:
             raise ValueError(f"Unknown provider: {provider_name}")
 
         prov = PROVIDERS[provider_name]
+        
+        # Support multiple API keys for load balancing
+        keys = prov.get('keys', [prov.get('key')])
+        if not keys or not keys[0]:
+            raise ValueError(f"No API key configured for {provider_name}")
+            
+        import random
+        selected_key = random.choice(keys).strip()
+        
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {prov['key']}"
+            "Authorization": f"Bearer {selected_key}"
         }
 
         # OpenRouter specific headers
