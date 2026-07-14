@@ -65,4 +65,5 @@ def test_chat_endpoint_mocked(mocker):
     data = response.json()
     assert data["success"] is True
     assert data["reply"] == "Mocked response from Divine Engine"
-    assert data["model_used"] == "mock-model-7b"
+    assert data["model_used"] == "llama3-8b-8192"
+    assert data["provider_used"] == "Groq"
