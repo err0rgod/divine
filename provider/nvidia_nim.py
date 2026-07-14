@@ -108,12 +108,6 @@ def main():
     if not API_KEY or API_KEY == "nvapi-YOUR_KEY_HERE":
         print("⚠️  Please set NVIDIA_NIM_API_KEY in your .env file or script first!")
         return
-
-    print("Fetching available models...")
-    models = get_models()
-    if models:
-        # Just show the first 10 so we don't flood the terminal
-        print(f"Available models (showing first 10): {', '.join(models[:10])}...")
     
     print("=" * 60)
     print("  Type 'quit' to exit | 'clear' to reset")
