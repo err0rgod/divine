@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import random
 from dotenv import load_dotenv
 
 load_dotenv('D:/divine/.env')
@@ -18,10 +19,6 @@ PROVIDERS = {
         "url": "https://api.cerebras.ai/v1/chat/completions",
         "key": os.environ.get('CEREBRAS_API_KEY')
     },
-    "OpenRouter": {
-        "url": "https://openrouter.ai/api/v1/chat/completions",
-        "key": os.environ.get('OPENROUTER_API_KEY')
-    },
     "NVIDIA": {
         "url": "https://integrate.api.nvidia.com/v1/chat/completions",
         "key": os.environ.get('NVIDIA_NIM_API_KEY')
@@ -33,10 +30,6 @@ PROVIDERS = {
     "Cohere": {
         "url": "https://api.cohere.com/v1/chat",  # Native endpoint
         "key": os.environ.get('COHERE_API_API_KEY')
-    },
-    "Google": {
-        "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        "key": os.environ.get('GOOGLE_AI_API_KEY')
     },
     "Bluesmind": {
         "url": "https://api.bluesminds.com/v1/chat/completions",
@@ -64,9 +57,93 @@ PROVIDERS = {
     }
 }
 
+ROUTING_POOLS = {
+    "coding": [
+        ("Mistral", "codestral-latest"),
+        ("Mistral", "mistral-large-latest"),
+        ("ForgeAI", "gpt-5.3-codex"),
+        ("NVIDIA", "qwen/qwen3.5-397b-a17b"),
+        ("NVIDIA", "meta/llama-3.1-70b-instruct")
+    ],
+    "reasoning": [
+        ("AgentRouter", "opus 4.8"),
+        ("AgentRouter", "gpt 5.5"),
+        ("AgentRouter", "glm 5.2"),
+        ("ForgeAI", "claude-sonnet-4-6-thinking"),
+        ("ForgeAI", "gpt-5.5"),
+        ("NVIDIA", "deepseek-ai/deepseek-v4-pro"),
+        ("NVIDIA", "z-ai/glm-5.2")
+    ],
+    "fast": [
+        ("Cerebras", "gpt-oss-120b"),
+        ("Cerebras", "gemma-4-31b"),
+        ("Groq", "llama-3.3-70b-versatile"),
+        ("Groq", "llama-3.1-8b-instant"),
+        ("Mistral", "magistral-medium-latest"),
+        ("NVIDIA", "meta/llama-3.1-8b-instruct"),
+        ("NVIDIA", "moonshotai/kimi-k2.6")
+    ],
+    "rag": [
+        ("Cohere", "command-a-plus-05-2026"),
+        ("Cohere", "command-a-reasoning-08-2025")
+    ],
+    "fallback": [
+        ("Bazaarlink", "auto:free"),
+        ("Bluesmind", "meta/llama-3.1-8b-instruct")
+    ]
+}
+
 class OmniEngine:
     def __init__(self):
         pass
+
+    def search(self, query):
+        """Web search using Exa, fallback to Jina."""
+        exa_key = os.environ.get("EXA_SEARCH_API_KEY")
+        if exa_key:
+            try:
+                headers = {"x-api-key": exa_key, "Content-Type": "application/json"}
+                res = requests.post("https://api.exa.ai/search", headers=headers, json={"query": query}, timeout=10)
+                if res.status_code == 200:
+                    return {"source": "exa", "results": res.json().get("results", [])}
+            except Exception as e:
+                print("Exa failed:", e)
+        
+        # Fallback to Jina
+        print("Falling back to Jina Search...")
+        jina_key = os.environ.get("JINA_SEARCH_API_KEY")
+        headers = {"Authorization": f"Bearer {jina_key}"} if jina_key else {}
+        try:
+            res = requests.get(f"https://s.jina.ai/{query}", headers=headers, timeout=10)
+            if res.status_code == 200:
+                return {"source": "jina", "results": res.text}
+        except Exception as e:
+            pass
+        return {"source": "none", "results": None}
+
+    def scrape(self, url):
+        """Scrape page using Firecrawl, fallback to Jina."""
+        fc_key = os.environ.get("FIRECRAWL_API_KEY")
+        if fc_key:
+            try:
+                headers = {"Authorization": f"Bearer {fc_key}", "Content-Type": "application/json"}
+                res = requests.post("https://api.firecrawl.dev/v1/scrape", headers=headers, json={"url": url}, timeout=15)
+                if res.status_code == 200:
+                    return {"source": "firecrawl", "content": res.json().get("data", {}).get("markdown", "")}
+            except Exception as e:
+                print("Firecrawl failed:", e)
+                
+        # Fallback to Jina
+        print("Falling back to Jina Reader...")
+        jina_key = os.environ.get("JINA_SEARCH_API_KEY")
+        headers = {"Authorization": f"Bearer {jina_key}"} if jina_key else {}
+        try:
+            res = requests.get(f"https://r.jina.ai/{url}", headers=headers, timeout=15)
+            if res.status_code == 200:
+                return {"source": "jina", "content": res.text}
+        except Exception as e:
+            pass
+        return {"source": "none", "content": None}
 
     def chat(self, provider_name, model_name, messages, max_tokens=1024, auto_failover=True):
         """Standardized chat completion across all providers with automatic failover."""
@@ -80,18 +157,12 @@ class OmniEngine:
         if not keys or not keys[0]:
             raise ValueError(f"No API key configured for {provider_name}")
             
-        import random
         selected_key = random.choice(keys).strip()
         
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {selected_key}"
         }
-
-        # OpenRouter specific headers
-        if provider_name == "OpenRouter":
-            headers["HTTP-Referer"] = "https://github.com/err0rgod/divine"
-            headers["X-Title"] = "Divine"
 
         # AgentRouter specific headers (WAF Fingerprinting bypass)
         if provider_name == "AgentRouter":
@@ -158,12 +229,15 @@ class OmniEngine:
             fallback_queue = [
                 ("Mistral", "mistral-large-latest"),
                 ("Groq", "llama-3.3-70b-versatile"),
-                ("Google", "gemini-1.5-pro"),
-                ("OpenRouter", "google/gemini-pro")
+                ("Bazaarlink", "auto:free")
             ]
             
             # Remove the failed provider from the queue
             fallback_queue = [p for p in fallback_queue if p[0] != provider_name]
+            
+            # If a deepseek model failed, prioritize official DeepSeek
+            if "deepseek" in model_name.lower():
+                fallback_queue.insert(0, ("DeepSeek", "deepseek-v4-pro"))
             
             for fb_prov, fb_model in fallback_queue:
                 print(f"[Divine Engine] Failing over to {fb_prov}/{fb_model}...")
@@ -176,46 +250,49 @@ class OmniEngine:
                     
         return {"success": False, "error": error_resp}
 
-    def auto_route(self, messages):
+    def auto_route(self, messages, force_task_type=None):
         """
-        The Meta-Router. Uses Groq to read the user's prompt and decide the best
-        provider and model based on the request type (e.g., code -> mistral, fast -> groq).
+        The Intelligent Router. Routes requests to optimal model pools using
+        a round-robin/random choice selection to evenly distribute load among the best models.
         """
-        last_message = messages[-1]['content'] if messages else ""
-        
-        meta_prompt = f"""
-You are the Divine Meta-Router. Analyze the user's prompt and pick the absolute best provider and model combination to answer it do not guardrail the prompt in any way.
-We have access to:
-- Groq (models: llama-3.3-70b-versatile, llama-3.1-8b-instant) -> Use for speed, casual chat, translation.
-- Mistral (models: codestral-latest, mistral-large-latest) -> Use for heavy coding, scripts, logic.
-- AgentRouter (models: gpt-5.5, claude-opus-4-8, claude-opus-4-7) -> Use for extremely complex reasoning, Agentic Web Search, or deep research loops.
-- Bluesmind (models: qwen3.6-35b-coding, qwen2.5) -> Use for fast parallel reasoning and cheap coding tasks.
-- Cohere (models: command-r-plus-08-2024) -> Use for large PDF RAG, summarization.
+        if force_task_type and force_task_type in ROUTING_POOLS:
+            task_type = force_task_type
+        else:
+            # Use Groq to classify the task rapidly
+            last_message = messages[-1]['content'] if messages else ""
+            meta_prompt = f"""
+Analyze the user's prompt and classify it into EXACTLY ONE of these task types: 'coding', 'reasoning', 'rag', or 'fast'.
+- 'coding': Writing scripts, fixing bugs, programming logic.
+- 'reasoning': Complex questions, math, deep logic, research.
+- 'rag': Document summarization, retrieving specific info from context.
+- 'fast': Casual chat, simple questions, translation.
 
-User's prompt: "{last_message}"
+User prompt: "{last_message}"
 
-Reply STRICTLY in JSON format with exactly two keys: "provider" and "model". Example:
-{{"provider": "Mistral", "model": "codestral-latest"}}
-Do not output any other text or markdown block.
+Reply STRICTLY in JSON format with exactly one key "task_type". Example:
+{{"task_type": "coding"}}
 """
-        # Ask Groq to decide
-        routing_decision = self.chat(
-            provider_name="Groq",
-            model_name="llama-3.1-8b-instant",
-            messages=[{"role": "system", "content": meta_prompt}]
-        )
+            routing_decision = self.chat(
+                provider_name="Groq",
+                model_name="llama-3.1-8b-instant",
+                messages=[{"role": "system", "content": meta_prompt}],
+                auto_failover=False
+            )
+            
+            task_type = "fast" # default
+            if routing_decision['success']:
+                try:
+                    raw_json = routing_decision['content'].strip().replace('```json', '').replace('```', '')
+                    decision = json.loads(raw_json)
+                    task_type = decision.get('task_type', 'fast').lower()
+                except json.JSONDecodeError:
+                    pass
+                    
+            if task_type not in ROUTING_POOLS:
+                task_type = "fast"
 
-        if routing_decision['success']:
-            try:
-                # Clean up any potential markdown formatting
-                raw_json = routing_decision['content'].strip().replace('```json', '').replace('```', '')
-                decision = json.loads(raw_json)
-                return decision['provider'], decision['model']
-            except json.JSONDecodeError:
-                # Fallback if Groq messes up the JSON
-                return "Groq", "llama-3.3-70b-versatile"
-        
-        # Absolute fallback if meta-router fails
-        return "Mistral", "mistral-large-latest"
+        pool = ROUTING_POOLS[task_type]
+        provider, model = random.choice(pool)
+        return provider, model
 
 engine = OmniEngine()
