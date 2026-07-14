@@ -61,7 +61,7 @@ ROUTING_POOLS = {
     "coding": [
         ("Mistral", "codestral-latest"),
         ("Mistral", "mistral-large-latest"),
-        ("ForgeAI", "gpt-5.3-codex"),
+        ("ForgeAI", "gpt-5.5"),
         ("NVIDIA", "qwen/qwen3.5-397b-a17b"),
         ("NVIDIA", "meta/llama-3.1-70b-instruct")
     ],
