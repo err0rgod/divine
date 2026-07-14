@@ -8,3 +8,6 @@ chats.json
 
 dashboard_config.json
 routing.json
+
+config/dashboard_config.json
+config/routing.json
