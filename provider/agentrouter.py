@@ -75,6 +75,24 @@ def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
         return None, conversation
 
 def main():
+    global MODEL
+    import json
+    try:
+        with open('../models.json' if os.path.exists('../models.json') else 'models.json', 'r') as f:
+            db = json.load(f)
+            avail = db.get("AgentRouter", [])
+            if avail:
+                print("\nAvailable Models for AgentRouter:")
+                for i, m in enumerate(avail):
+                    print(f"  [{i}] {m}")
+                sel = input(f"\nSelect model number (or press Enter for default '{MODEL}'): ").strip()
+                if sel.isdigit() and int(sel) < len(avail):
+                    MODEL = avail[int(sel)]
+                elif sel:
+                    MODEL = sel
+    except Exception as e:
+        pass
+
     """Interactive chat loop for Agent Router."""
     print("=" * 60)
     print(f"  Agent Router Interactive Chat ({MODEL})")

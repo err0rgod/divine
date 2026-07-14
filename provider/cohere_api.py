@@ -75,6 +75,24 @@ def chat(prompt, chat_history=None):
         return None, chat_history
 
 def main():
+    global MODEL
+    import json
+    try:
+        with open('../models.json' if os.path.exists('../models.json') else 'models.json', 'r') as f:
+            db = json.load(f)
+            avail = db.get("Cohere", [])
+            if avail:
+                print("\nAvailable Models for Cohere:")
+                for i, m in enumerate(avail):
+                    print(f"  [{i}] {m}")
+                sel = input(f"\nSelect model number (or press Enter for default '{MODEL}'): ").strip()
+                if sel.isdigit() and int(sel) < len(avail):
+                    MODEL = avail[int(sel)]
+                elif sel:
+                    MODEL = sel
+    except Exception as e:
+        pass
+
     """Interactive chat loop for Cohere API."""
     print("=" * 60)
     print(f"  Cohere AI Interactive Chat ({MODEL})")
