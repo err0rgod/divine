@@ -27,7 +27,7 @@ import sys
 # Replace this with your actual NVIDIA NIM API key when you have it.
 API_KEY = os.environ.get("NVIDIA_NIM_API_KEY")
 BASE_URL = "https://integrate.api.nvidia.com/v1"
-MODEL = "meta/llama3-70b-instruct"
+MODEL = "meta/llama-3.1-8b-instruct"
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -105,8 +105,8 @@ def main():
     print("  NVIDIA NIM Interactive Chat")
     print("=" * 60)
     
-    if API_KEY == "nvapi-YOUR_KEY_HERE":
-        print("⚠️  Please update API_KEY in nvidia_nim.py first!")
+    if not API_KEY or API_KEY == "nvapi-YOUR_KEY_HERE":
+        print("⚠️  Please set NVIDIA_NIM_API_KEY in your .env file or script first!")
         return
 
     print("Fetching available models...")

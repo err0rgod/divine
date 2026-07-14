@@ -33,7 +33,7 @@ API_KEY = os.environ.get("OPENROUTER_API_KEY")
 BASE_URL = "https://openrouter.ai/api/v1"
 
 # Using a free model because the key is on the free tier
-MODEL = "google/gemini-2.0-flash-exp:free"
+MODEL = "meta-llama/llama-3.2-3b-instruct:free"
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -103,6 +103,10 @@ def main():
     print("⚠️  Status: Using Free Tier models only (e.g. ':free' suffix)")
     print("=" * 60)
     print()
+
+    if not API_KEY:
+        print("⚠️  Please set OPENROUTER_API_KEY in your .env file first!")
+        return
 
     conversation = []
 
