@@ -52,6 +52,7 @@ def test_chat_endpoint_mocked(mocker):
     }
 
     payload = {
+        "chat_id": "test-chat-123",
         "provider": "Groq",
         "model": "llama3-8b-8192",
         "prompt": "Hello Divine!",
