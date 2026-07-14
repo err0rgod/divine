@@ -2,6 +2,9 @@
     "Auto-Select": [
         "Divine (Meta-Router)"
     ],
+    "FuturePPO": [
+        "glm-5.2"
+    ],
     "ForgeAI": [
         "MiniMax-M2.5",
         "MiniMax-M3",

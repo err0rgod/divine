@@ -7,6 +7,12 @@ load_dotenv('D:/divine/.env')
 
 providers = [
     {
+        "id": "FuturePPO",
+        "url": "https://api.futureppo.top/v1/models",
+        "headers": {"Authorization": f"Bearer {os.environ.get('FUTUREPPO_API_KEY', '')}"},
+        "parser": lambda r: [m['id'] for m in r.json().get('data', [])] if r and r.json().get('data') else ['glm-5.2'],
+    },
+    {
         "id": "ForgeAI",
         "url": "https://forge-gateway-api.fly.dev/v1/models",
         "headers": {"Authorization": f"Bearer {os.environ.get('FORGE_AI_API_KEY', '')}"},

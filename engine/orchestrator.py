@@ -50,6 +50,11 @@ PROVIDERS = {
         "url": "https://forge-gateway-api.fly.dev/v1/chat/completions",
         "keys": [k.strip() for k in os.environ.get('FORGE_AI_API_KEYS', os.environ.get('FORGE_AI_API_KEY', '')).split(',') if k.strip()],
         "key": os.environ.get('FORGE_AI_API_KEY')
+    },
+    "FuturePPO": {
+        "url": "https://api.futureppo.top/v1/chat/completions",
+        "keys": [k.strip() for k in os.environ.get('FUTUREPPO_API_KEYS', os.environ.get('FUTUREPPO_API_KEY', '')).split(',') if k.strip()],
+        "key": os.environ.get('FUTUREPPO_API_KEY')
     }
 }
 
