@@ -32,7 +32,7 @@ MODEL = "qwen2.5"
 
 HEADERS = {
     "Content-Type": "application/json",
-    "Authorization": f"Bearer {API_KEY}"
+    "Authorization": f"Bearer {KEYS[0] if KEYS else ''}"
 }
 
 def get_models():
