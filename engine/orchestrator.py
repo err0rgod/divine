@@ -55,6 +55,11 @@ PROVIDERS = {
         "url": "https://api.futureppo.top/v1/chat/completions",
         "keys": [k.strip() for k in os.environ.get('FUTUREPPO_API_KEYS', os.environ.get('FUTUREPPO_API_KEY', '')).split(',') if k.strip()],
         "key": os.environ.get('FUTUREPPO_API_KEY')
+    },
+    "DeepSeek": {
+        "url": "https://api.deepseek.com/chat/completions",
+        "keys": [k.strip() for k in os.environ.get('DEEPSEEK_API_KEYS', os.environ.get('DEEPSEEK_API_KEY', '')).split(',') if k.strip()],
+        "key": os.environ.get('DEEPSEEK_API_KEY')
     }
 }
 

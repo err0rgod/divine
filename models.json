@@ -2,6 +2,10 @@
     "Auto-Select": [
         "Divine (Meta-Router)"
     ],
+    "DeepSeek": [
+        "deepseek-v4-flash",
+        "deepseek-v4-pro"
+    ],
     "FuturePPO": [
         "glm-5.2"
     ],

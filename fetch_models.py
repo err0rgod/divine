@@ -7,6 +7,12 @@ load_dotenv('D:/divine/.env')
 
 providers = [
     {
+        "id": "DeepSeek",
+        "url": "https://api.deepseek.com/models",
+        "headers": {"Authorization": f"Bearer {os.environ.get('DEEPSEEK_API_KEY', '')}"},
+        "parser": lambda r: [m['id'] for m in r.json().get('data', [])],
+    },
+    {
         "id": "FuturePPO",
         "url": "https://api.futureppo.top/v1/models",
         "headers": {"Authorization": f"Bearer {os.environ.get('FUTUREPPO_API_KEY', '')}"},
