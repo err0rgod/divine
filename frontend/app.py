@@ -76,6 +76,24 @@ async def update_routing(req: Request):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+@app.get("/api/dashboard/proxy")
+async def get_proxy_config():
+    try:
+        with open("D:/divine/config/proxy_config.json", "r", encoding="utf-8") as f:
+            return JSONResponse(content=json.load(f))
+    except:
+        return JSONResponse(content={"aliases": {}, "keys": {}})
+
+@app.post("/api/dashboard/proxy")
+async def update_proxy_config(req: Request):
+    proxy_data = await req.json()
+    try:
+        with open("D:/divine/config/proxy_config.json", "w", encoding="utf-8") as f:
+            json.dump(proxy_data, f, indent=4)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     uploads_dir = agent_tools.UPLOADS_DIR
