@@ -178,84 +178,87 @@ def handle_openai_stream(handler, response, original_model, is_anthropic):
     active_tools = {}
     sent_stop = False
 
-    for line in response.iter_lines():
-        if not line: continue
-        line = line.decode('utf-8').strip()
-        if not line or not line.startswith("data: "):
-            continue
-            
-        data_str = line[6:]
-        if data_str == "[DONE]":
-            break
-            
-        try:
-            chunk = json.loads(data_str)
-        except:
-            continue
-            
-        if not chunk.get("choices"):
-            continue
-            
-        delta = chunk["choices"][0].get("delta", {})
-        finish_reason = chunk["choices"][0].get("finish_reason")
-        
-        if "content" in delta and delta["content"] is not None:
-            content = delta["content"]
-            if not in_text_block:
-                current_block_index += 1
-                in_text_block = True
-                t_start = {"type": "content_block_start", "index": current_block_index, "content_block": {"type": "text", "text": ""}}
-                handler.wfile.write(f"event: content_block_start\ndata: {json.dumps(t_start)}\n\n".encode('utf-8'))
-            
-            t_delta = {"type": "content_block_delta", "index": current_block_index, "delta": {"type": "text_delta", "text": content}}
-            handler.wfile.write(f"event: content_block_delta\ndata: {json.dumps(t_delta)}\n\n".encode('utf-8'))
-            handler.wfile.flush()
-            
-        if "tool_calls" in delta:
-            if in_text_block:
-                in_text_block = False
-                t_stop = {"type": "content_block_stop", "index": current_block_index}
-                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
+    try:
+        for line in response.iter_lines():
+            if not line: continue
+            line = line.decode('utf-8', errors='ignore').strip()
+            if not line or not line.startswith("data: "):
+                continue
                 
-            for tc in delta["tool_calls"]:
-                tc_index = tc["index"]
-                if tc_index not in active_tools:
+            data_str = line[6:]
+            if data_str == "[DONE]":
+                break
+                
+            try:
+                chunk = json.loads(data_str)
+            except:
+                continue
+                
+            if not chunk.get("choices"):
+                continue
+                
+            delta = chunk["choices"][0].get("delta", {})
+            finish_reason = chunk["choices"][0].get("finish_reason")
+            
+            if "content" in delta and delta["content"] is not None:
+                content = delta["content"]
+                if not in_text_block:
                     current_block_index += 1
-                    active_tools[tc_index] = current_block_index
+                    in_text_block = True
+                    t_start = {"type": "content_block_start", "index": current_block_index, "content_block": {"type": "text", "text": ""}}
+                    handler.wfile.write(f"event: content_block_start\ndata: {json.dumps(t_start)}\n\n".encode('utf-8'))
+                
+                t_delta = {"type": "content_block_delta", "index": current_block_index, "delta": {"type": "text_delta", "text": content}}
+                handler.wfile.write(f"event: content_block_delta\ndata: {json.dumps(t_delta)}\n\n".encode('utf-8'))
+                handler.wfile.flush()
+                
+            if "tool_calls" in delta:
+                if in_text_block:
+                    in_text_block = False
+                    t_stop = {"type": "content_block_stop", "index": current_block_index}
+                    handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
                     
-                    t_id = tc.get("id", "call_" + os.urandom(4).hex())
-                    t_name = tc.get("function", {}).get("name", "unknown")
-                    
-                    tl_start = {"type": "content_block_start", "index": current_block_index, "content_block": {"type": "tool_use", "id": t_id, "name": t_name, "input": {}}}
-                    handler.wfile.write(f"event: content_block_start\ndata: {json.dumps(tl_start)}\n\n".encode('utf-8'))
-                    
-                if "function" in tc and "arguments" in tc["function"]:
-                    args_str = tc["function"]["arguments"]
-                    if args_str:
-                        tl_delta = {"type": "content_block_delta", "index": active_tools[tc_index], "delta": {"type": "input_json_delta", "partial_json": args_str}}
-                        handler.wfile.write(f"event: content_block_delta\ndata: {json.dumps(tl_delta)}\n\n".encode('utf-8'))
-                        handler.wfile.flush()
+                for tc in delta["tool_calls"]:
+                    tc_index = tc["index"]
+                    if tc_index not in active_tools:
+                        current_block_index += 1
+                        active_tools[tc_index] = current_block_index
                         
-        if finish_reason:
-            if in_text_block:
-                t_stop = {"type": "content_block_stop", "index": current_block_index}
-                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
-                in_text_block = False
+                        t_id = tc.get("id", "call_" + os.urandom(4).hex())
+                        t_name = tc.get("function", {}).get("name", "unknown")
+                        
+                        tl_start = {"type": "content_block_start", "index": current_block_index, "content_block": {"type": "tool_use", "id": t_id, "name": t_name, "input": {}}}
+                        handler.wfile.write(f"event: content_block_start\ndata: {json.dumps(tl_start)}\n\n".encode('utf-8'))
+                        
+                    if "function" in tc and "arguments" in tc["function"]:
+                        args_str = tc["function"]["arguments"]
+                        if args_str:
+                            tl_delta = {"type": "content_block_delta", "index": active_tools[tc_index], "delta": {"type": "input_json_delta", "partial_json": args_str}}
+                            handler.wfile.write(f"event: content_block_delta\ndata: {json.dumps(tl_delta)}\n\n".encode('utf-8'))
+                            handler.wfile.flush()
+                            
+            if finish_reason:
+                if in_text_block:
+                    t_stop = {"type": "content_block_stop", "index": current_block_index}
+                    handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
+                    in_text_block = False
+                    
+                for tc_index in active_tools:
+                    tl_stop = {"type": "content_block_stop", "index": active_tools[tc_index]}
+                    handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(tl_stop)}\n\n".encode('utf-8'))
+                    
+                stop_reason_str = "end_turn"
+                if finish_reason == "tool_calls": stop_reason_str = "tool_use"
+                elif finish_reason == "length": stop_reason_str = "max_tokens"
                 
-            for tc_index in active_tools:
-                tl_stop = {"type": "content_block_stop", "index": active_tools[tc_index]}
-                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(tl_stop)}\n\n".encode('utf-8'))
-                
-            stop_reason_str = "end_turn"
-            if finish_reason == "tool_calls": stop_reason_str = "tool_use"
-            elif finish_reason == "length": stop_reason_str = "max_tokens"
-            
-            m_delta = {"type": "message_delta", "delta": {"stop_reason": stop_reason_str, "stop_sequence": None}, "usage": {"output_tokens": 0}}
-            handler.wfile.write(f"event: message_delta\ndata: {json.dumps(m_delta)}\n\n".encode('utf-8'))
-            handler.wfile.write(b"event: message_stop\ndata: {\"type\": \"message_stop\"}\n\n")
-            handler.wfile.flush()
-            sent_stop = True
-            break
+                m_delta = {"type": "message_delta", "delta": {"stop_reason": stop_reason_str, "stop_sequence": None}, "usage": {"output_tokens": 0}}
+                handler.wfile.write(f"event: message_delta\ndata: {json.dumps(m_delta)}\n\n".encode('utf-8'))
+                handler.wfile.write(b'event: message_stop\ndata: {"type": "message_stop"}\n\n')
+                handler.wfile.flush()
+                sent_stop = True
+                break
+    except Exception as stream_err:
+        print(f"[Proxy Stream Warning] Upstream disconnected early: {stream_err}")
 
     if not sent_stop:
         if in_text_block:
