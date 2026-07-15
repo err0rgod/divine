@@ -18,9 +18,17 @@ def load_keys():
 
 FORGE_API_KEYS = load_keys()
 
+def get_target_model(default):
+    try:
+        import json
+        with open("D:/divine/config/proxy_config.json", "r") as f:
+            return json.load(f).get("target_model", default)
+    except:
+        return default
+
 def anthropic_to_openai_request(anthropic_data):
     req = {
-        "model": DEFAULT_TARGET_MODEL,
+        "model": get_target_model(DEFAULT_TARGET_MODEL),
         "messages": [],
     }
     

@@ -83,6 +83,7 @@ def main():
             "Start All Services (Web Dashboard + Proxy Server)",
             "Start Web Dashboard Only",
             "Start Proxy Server Only",
+            "Switch Target Model (Dynamically)",
             "App Integration Guide (Claude Code, Codex, etc.)",
             "System Information",
             "Exit"
@@ -139,6 +140,47 @@ def main():
             console.print("[bold]3. Toggle 'Custom models' and type the model you want to alias.[/]")
             
         console.print("\n[dim]* Make sure you add these `sk-...` keys to your Proxy Gateway in the dashboard![/]")
+        input("\nPress Enter to return to menu...")
+        main()
+    elif choice == "Switch Target Model (Dynamically)":
+        import json
+        try:
+            with open("D:/divine/config/models.json", "r") as f:
+                models_data = json.load(f)
+        except:
+            models_data = {}
+            
+        model_choices = []
+        for provider, models in models_data.items():
+            if provider in ["Mistral", "AgentRouter", "ForgeAI", "Groq", "OpenRouter"]:
+                for m in models:
+                    model_choices.append(f"{provider}: {m}")
+                    
+        if not model_choices:
+            model_choices = ["Mistral: codestral-latest", "AgentRouter: claude-opus-4-8", "AgentRouter: gpt-5.5", "ForgeAI: gpt-5.6-luna", "ForgeAI: glm-5.2"]
+            
+        selected = questionary.select("Select the target model for the proxy to use:", choices=model_choices).ask()
+        
+        if selected:
+            provider, target_model = selected.split(": ", 1)
+            proxy_config = {}
+            try:
+                with open("D:/divine/config/proxy_config.json", "r") as f:
+                    proxy_config = json.load(f)
+            except:
+                pass
+                
+            proxy_config["target_model"] = target_model
+            # Automatically update the active proxy if the model belongs to a standalone provider
+            if provider in ["Mistral", "AgentRouter", "ForgeAI"]:
+                proxy_config["active"] = provider
+                
+            with open("D:/divine/config/proxy_config.json", "w") as f:
+                json.dump(proxy_config, f, indent=4)
+                
+            console.print(f"\n[bold green]Success![/] Target model updated to [cyan]{target_model}[/] (Proxy: {provider}).")
+            console.print("[dim]The running proxy will automatically use this model on the very next request! (If you changed providers, you may need to restart the proxy).[/dim]")
+            
         input("\nPress Enter to return to menu...")
         main()
     elif choice == "System Information":

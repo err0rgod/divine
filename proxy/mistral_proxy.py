@@ -15,9 +15,17 @@ MISTRAL_API_KEYS = [
 ]
 DEFAULT_TARGET_MODEL = "codestral-latest"  # Codestral is great for coding and on free tier. 'mistral-large-latest' is also an option.
 
+def get_target_model(default):
+    try:
+        import json
+        with open("D:/divine/config/proxy_config.json", "r") as f:
+            return json.load(f).get("target_model", default)
+    except:
+        return default
+
 def anthropic_to_mistral_request(anthropic_data):
     mistral_req = {
-        "model": DEFAULT_TARGET_MODEL,
+        "model": get_target_model(DEFAULT_TARGET_MODEL),
         "messages": [],
     }
     
