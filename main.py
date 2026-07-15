@@ -45,8 +45,21 @@ def start_services(start_web=True, start_proxy=True):
         run_service("WEB", "uvicorn frontend.app:app --host 0.0.0.0 --port 8000", "cyan")
         
     if start_proxy:
-        console.print("[green]►[/] Starting Universal Proxy on http://127.0.0.1:8001")
-        run_service("PROXY", "uvicorn proxy.server:app --host 0.0.0.0 --port 8001", "yellow")
+        import json
+        active_proxy = "Mistral"
+        try:
+            with open("D:/divine/config/proxy_config.json", "r") as f:
+                active_proxy = json.load(f).get("active", "Mistral")
+        except:
+            pass
+            
+        console.print(f"[green]►[/] Starting {active_proxy} Proxy on http://127.0.0.1:8001")
+        if active_proxy == "AgentRouter":
+            run_service("PROXY", "python proxy/agentrouter_proxy.py", "yellow")
+        elif active_proxy == "ForgeAI":
+            run_service("PROXY", "python proxy/forge_ai_proxy.py", "yellow")
+        else:
+            run_service("PROXY", "python proxy/mistral_proxy.py", "yellow")
         
     console.print("\n[dim]Services are running in the background. Press Ctrl+C to stop and exit.[/dim]\n")
     try:

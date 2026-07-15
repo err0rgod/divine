@@ -133,13 +133,18 @@
                     <h2 class="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Proxy Gateway Configuration</h2>
                 </div>
                 <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4 max-w-3xl">
-                    Configure the OpenAI/Anthropic-compatible proxy server. Define Model Aliases (e.g. <code>claude-3-5-sonnet: Mistral, codestral-latest</code>) to spoof incoming requests, and create custom API keys (starting with <code>sk-</code>) to authenticate external apps.
+                    Select a standalone provider proxy to handle incoming requests (like from Claude Code). Each proxy is uniquely written to translate complex tool definitions for that specific provider.
                 </p>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/50 transition-shadow">
-                        <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Model Aliases</h3>
-                        <textarea id="proxy-aliases" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-xs font-mono text-zinc-700 dark:text-zinc-300 outline-none resize-y min-h-[120px] leading-relaxed no-scrollbar" placeholder="RequestedModel: Provider, TargetModel&#10;gpt-4o: Mistral, codestral-latest"></textarea>
+                        <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Active Provider Proxy</h3>
+                        <p class="text-xs text-zinc-500 mb-3">Changes take effect next time you start the proxy.</p>
+                        <select id="active-proxy" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow cursor-pointer">
+                            <option value="Mistral">Mistral Translation Proxy</option>
+                            <option value="AgentRouter">AgentRouter Translation Proxy</option>
+                            <option value="ForgeAI">Forge AI Translation Proxy</option>
+                        </select>
                     </div>
                     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/50 transition-shadow">
                         <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">External App API Keys</h3>
@@ -290,16 +295,14 @@
         fetch('/api/dashboard/proxy')
             .then(res => res.json())
             .then(data => {
-                const aliasTa = document.getElementById('proxy-aliases');
+                const activeProxySelect = document.getElementById('active-proxy');
                 const keysTa = document.getElementById('proxy-keys');
                 
-                if (data.aliases) {
-                    aliasTa.value = Object.entries(data.aliases)
-                        .map(([k, v]) => `${k}: ${v[0]}, ${v[1]}`)
-                        .join('\n');
+                if (data.active) {
+                    activeProxySelect.value = data.active;
                 }
                 
-                if (data.keys) {
+                if (data.keys && Array.isArray(data.keys)) {
                     keysTa.value = data.keys.join('\n');
                 }
             });
@@ -431,18 +434,9 @@
             });
 
             // Parse Proxy Config
-            const proxyConfig = { aliases: {}, keys: [] };
+            const proxyConfig = { active: "Mistral", keys: [] };
             
-            document.getElementById('proxy-aliases').value.split('\n').forEach(line => {
-                const parts = line.split(':');
-                if (parts.length === 2) {
-                    const reqModel = parts[0].trim();
-                    const targetParts = parts[1].split(',');
-                    if (targetParts.length === 2) {
-                        proxyConfig.aliases[reqModel] = [targetParts[0].trim(), targetParts[1].trim()];
-                    }
-                }
-            });
+            proxyConfig.active = document.getElementById('active-proxy').value;
             
             document.getElementById('proxy-keys').value.split('\n').forEach(line => {
                 const key = line.trim();
