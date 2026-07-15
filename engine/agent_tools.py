@@ -59,7 +59,7 @@ def extract_file_content(filepath: str, is_multimodal_model: bool = False) -> st
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 return f.read()
-        except:
+        except Exception:
             return "Failed to read text file."
             
     # PDF files

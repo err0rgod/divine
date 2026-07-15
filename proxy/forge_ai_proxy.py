@@ -4,7 +4,7 @@ import urllib.request
 import json
 import os
 
-PORT = 6900
+PORT = 8000
 FORGE_AI_API_URL = "https://forge-gateway-api.fly.dev/v1/chat/completions"
 DEFAULT_TARGET_MODEL = "gpt-5.5"
 
@@ -13,7 +13,7 @@ def load_keys():
         with open("D:/divine/config/dashboard_config.json", "r") as f:
             data = json.load(f)
             return data.get("keys", {}).get("ForgeAI", [])
-    except:
+    except Exception:
         return []
 
 FORGE_API_KEYS = load_keys()
@@ -22,8 +22,9 @@ def get_target_model(default):
     try:
         import json
         with open("D:/divine/config/proxy_config.json", "r") as f:
-            return json.load(f).get("target_model", default)
-    except:
+            val = json.load(f).get("target_model")
+            return val if val else default
+    except Exception:
         return default
 
 def anthropic_to_openai_request(anthropic_data):
@@ -143,43 +144,189 @@ def openai_to_anthropic_response(resp, original_model):
         }
     }
 
+def handle_openai_stream(handler, response, original_model, is_anthropic):
+    handler.send_response(200)
+    handler.send_header("Content-Type", "text/event-stream")
+    handler.send_header("Cache-Control", "no-cache")
+    handler.send_header("Connection", "keep-alive")
+    handler.end_headers()
+    
+    if not is_anthropic:
+        for line in response:
+            handler.wfile.write(line)
+            handler.wfile.flush()
+        return
+
+    import os
+    msg_id = "msg_proxy_" + os.urandom(4).hex()
+    
+    start_event = {
+        "type": "message_start",
+        "message": {
+            "id": msg_id, "type": "message", "role": "assistant",
+            "content": [], "model": original_model,
+            "stop_reason": None, "stop_sequence": None,
+            "usage": {"input_tokens": 0, "output_tokens": 0}
+        }
+    }
+    handler.wfile.write(f"event: message_start\ndata: {json.dumps(start_event)}\n\n".encode('utf-8'))
+
+    current_block_index = -1
+    in_text_block = False
+    active_tools = {}
+
+    for line in response:
+        line = line.decode('utf-8').strip()
+        if not line or not line.startswith("data: "):
+            continue
+            
+        data_str = line[6:]
+        if data_str == "[DONE]":
+            break
+            
+        try:
+            chunk = json.loads(data_str)
+        except:
+            continue
+            
+        if not chunk.get("choices"):
+            continue
+            
+        delta = chunk["choices"][0].get("delta", {})
+        finish_reason = chunk["choices"][0].get("finish_reason")
+        
+        if "content" in delta and delta["content"] is not None:
+            content = delta["content"]
+            if not in_text_block:
+                current_block_index += 1
+                in_text_block = True
+                t_start = {"type": "content_block_start", "index": current_block_index, "content_block": {"type": "text", "text": ""}}
+                handler.wfile.write(f"event: content_block_start\ndata: {json.dumps(t_start)}\n\n".encode('utf-8'))
+            
+            t_delta = {"type": "content_block_delta", "index": current_block_index, "delta": {"type": "text_delta", "text": content}}
+            handler.wfile.write(f"event: content_block_delta\ndata: {json.dumps(t_delta)}\n\n".encode('utf-8'))
+            handler.wfile.flush()
+            
+        if "tool_calls" in delta:
+            if in_text_block:
+                in_text_block = False
+                t_stop = {"type": "content_block_stop", "index": current_block_index}
+                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
+                
+            for tc in delta["tool_calls"]:
+                tc_index = tc["index"]
+                if tc_index not in active_tools:
+                    current_block_index += 1
+                    active_tools[tc_index] = current_block_index
+                    
+                    t_id = tc.get("id", "call_" + os.urandom(4).hex())
+                    t_name = tc.get("function", {}).get("name", "unknown")
+                    
+                    tl_start = {"type": "content_block_start", "index": current_block_index, "content_block": {"type": "tool_use", "id": t_id, "name": t_name, "input": {}}}
+                    handler.wfile.write(f"event: content_block_start\ndata: {json.dumps(tl_start)}\n\n".encode('utf-8'))
+                    
+                if "function" in tc and "arguments" in tc["function"]:
+                    args_str = tc["function"]["arguments"]
+                    if args_str:
+                        tl_delta = {"type": "content_block_delta", "index": active_tools[tc_index], "delta": {"type": "input_json_delta", "partial_json": args_str}}
+                        handler.wfile.write(f"event: content_block_delta\ndata: {json.dumps(tl_delta)}\n\n".encode('utf-8'))
+                        handler.wfile.flush()
+                        
+        if finish_reason:
+            if in_text_block:
+                t_stop = {"type": "content_block_stop", "index": current_block_index}
+                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
+                in_text_block = False
+                
+            for tc_index in active_tools:
+                tl_stop = {"type": "content_block_stop", "index": active_tools[tc_index]}
+                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(tl_stop)}\n\n".encode('utf-8'))
+                
+            stop_reason_str = "end_turn"
+            if finish_reason == "tool_calls": stop_reason_str = "tool_use"
+            elif finish_reason == "length": stop_reason_str = "max_tokens"
+            
+            m_delta = {"type": "message_delta", "delta": {"stop_reason": stop_reason_str, "stop_sequence": None}, "usage": {"output_tokens": 0}}
+            handler.wfile.write(f"event: message_delta\ndata: {json.dumps(m_delta)}\n\n".encode('utf-8'))
+            handler.wfile.write(b"event: message_stop\ndata: {\"type\": \"message_stop\"}\n\n")
+            handler.wfile.flush()
+            break
+
 class ForgeAIProxyHandler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.send_response(200)
         self.end_headers()
 
     def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Forge AI Proxy is running!")
+        if self.path.endswith("/v1/models"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            models_resp = {
+                "object": "list",
+                "data": [
+                    {"id": "claude-3-7-sonnet-20250219", "type": "model", "created_at": 1739923200},
+                    {"id": "claude-3-5-sonnet-20241022", "type": "model", "created_at": 1729555200},
+                    {"id": "claude-3-5-haiku-20241022", "type": "model", "created_at": 1729555200},
+                    {"id": "claude-haiku-4-5-20251001", "type": "model", "created_at": 1735689600},
+                    {"id": "claude-3-opus-20240229", "type": "model", "created_at": 1709164800}
+                ]
+            }
+            self.wfile.write(json.dumps(models_resp).encode('utf-8'))
+        else:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Forge AI Proxy is running!")
 
     def do_POST(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length) if content_length > 0 else b""
             
-            anthropic_req = json.loads(body.decode('utf-8'))
-            original_model = anthropic_req.get("model", "claude-3-5-sonnet-20241022")
+            req_json = json.loads(body.decode('utf-8'))
+            original_model = req_json.get("model", "claude-3-5-sonnet-20241022")
             
-            req_data = anthropic_to_openai_request(anthropic_req)
+            is_anthropic = self.path.endswith("/v1/messages")
+            is_stream = req_json.get("stream", False)
+            
+            if is_anthropic:
+                req_data = anthropic_to_openai_request(req_json)
+            else:
+                req_data = req_json.copy()
+                req_data["model"] = get_target_model(DEFAULT_TARGET_MODEL)
+                
+            req_data["stream"] = is_stream
             req_body = json.dumps(req_data).encode('utf-8')
             
-            print(f"[Forge AI Proxy] Translated request (Target Model: {DEFAULT_TARGET_MODEL})")
+            print(f"[Forge AI Proxy] Handling {'Anthropic' if is_anthropic else 'OpenAI'} request (Target Model: {DEFAULT_TARGET_MODEL})")
             
+            if not FORGE_API_KEYS:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(b'{"error": {"message": "No API keys found."}}')
+                return
+
             last_error = None
             for key in FORGE_API_KEYS:
                 req = urllib.request.Request(FORGE_AI_API_URL, data=req_body, method="POST")
                 req.add_header("Content-Type", "application/json")
                 req.add_header("Authorization", f"Bearer {key}")
-                req.add_header("Accept", "application/json")
+                req.add_header("Accept", "text/event-stream" if is_stream else "application/json")
                 
                 try:
                     with urllib.request.urlopen(req, timeout=120) as response:
+                        if is_stream:
+                            handle_openai_stream(self, response, original_model, is_anthropic)
+                            return
                         resp_body = response.read()
                         resp_data = json.loads(resp_body.decode('utf-8'))
                         
-                        anthropic_resp = openai_to_anthropic_response(resp_data, original_model)
-                        final_body = json.dumps(anthropic_resp).encode('utf-8')
+                        if is_anthropic:
+                            final_resp = openai_to_anthropic_response(resp_data, original_model)
+                        else:
+                            final_resp = resp_data
+
+                        final_body = json.dumps(final_resp).encode('utf-8')
                         
                         self.send_response(200)
                         self.send_header("Content-Type", "application/json")
@@ -193,7 +340,8 @@ class ForgeAIProxyHandler(http.server.BaseHTTPRequestHandler):
                         continue
                     else:
                         error_body = e.read()
-                        print(f"[Forge AI Proxy Error] HTTP {e.code}: {error_body.decode('utf-8', errors='ignore')}")
+                        safe_err = error_body.decode('utf-8', errors='ignore').encode('ascii', errors='replace').decode('ascii')
+                        print(f"[Forge AI Proxy Error] HTTP {e.code}: {safe_err}")
                         self.send_response(e.code)
                         for k, v in e.headers.items():
                             if k.lower() not in ['transfer-encoding', 'connection']:

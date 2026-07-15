@@ -3,6 +3,7 @@ import requests
 import json
 import random
 from dotenv import load_dotenv
+from typing import Dict, List, Any, Optional, Tuple, Union
 
 load_dotenv('D:/divine/.env')
 
@@ -62,7 +63,7 @@ DEFAULT_ROUTING_POOLS = {
     ]
 }
 
-def load_routing_pools():
+def load_routing_pools() -> Dict[str, List[Tuple[str, str]]]:
     try:
         if os.path.exists("D:/divine/config/routing.json"):
             with open("D:/divine/config/routing.json", "r", encoding="utf-8") as f:
@@ -72,10 +73,10 @@ def load_routing_pools():
     return DEFAULT_ROUTING_POOLS
 
 class OmniEngine:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def search(self, query):
+    def search(self, query: str) -> Dict[str, Any]:
         """Web search using Exa, fallback to Jina."""
         exa_key = os.environ.get("EXA_SEARCH_API_KEY")
         if exa_key:
@@ -99,7 +100,7 @@ class OmniEngine:
             pass
         return {"source": "none", "results": None}
 
-    def scrape(self, url):
+    def scrape(self, url: str) -> Dict[str, Any]:
         """Scrape page using Firecrawl, fallback to Jina."""
         fc_key = os.environ.get("FIRECRAWL_API_KEY")
         if fc_key:
@@ -123,7 +124,7 @@ class OmniEngine:
             pass
         return {"source": "none", "content": None}
 
-    def chat(self, provider_name, model_name, messages, max_tokens=1024, auto_failover=True, test_key=None):
+    def chat(self, provider_name: str, model_name: str, messages: List[Dict[str, str]], max_tokens: int = 1024, auto_failover: bool = True, test_key: Optional[str] = None) -> Dict[str, Any]:
         """Standardized chat completion across all providers with automatic failover."""
         if provider_name not in PROVIDERS:
             raise ValueError(f"Unknown provider: {provider_name}")
@@ -238,7 +239,7 @@ class OmniEngine:
                     
         return {"success": False, "error": error_resp}
 
-    def auto_route(self, messages, force_task_type=None):
+    def auto_route(self, messages: List[Dict[str, str]], force_task_type: Optional[str] = None) -> Tuple[str, str]:
         """
         The Intelligent Router. Routes requests to optimal model pools using
         a round-robin/random choice selection to evenly distribute load among the best models.

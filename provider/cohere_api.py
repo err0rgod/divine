@@ -20,9 +20,10 @@ CURRENT STATUS:
 import requests
 import json
 import sys
+import time
 
-API_KEY = os.environ.get("COHERE_API_API_KEY")
-BASE_URL = "https://api.cohere.com/v1"
+API_KEY = os.environ.get("COHERE_API_KEY")
+BASE_URL = "https://api.cohere.com/v2"
 
 # Using their latest flagship model
 MODEL = "command-a-plus-05-2026"
@@ -47,12 +48,14 @@ def chat(prompt, chat_history=None):
     }
 
     try:
+        start_time = time.time()
         response = requests.post(
             f"{BASE_URL}/chat",
             headers=HEADERS,
             json=payload,
             timeout=30,
         )
+        elapsed = time.time() - start_time
 
         if response.status_code != 200:
             print(f"Error {response.status_code}: {response.text}")
@@ -65,11 +68,14 @@ def chat(prompt, chat_history=None):
         meta = data.get("meta", {})
         usage = meta.get("tokens", {})
         
+        completion_tokens = usage.get('output_tokens', 0)
+        tps = completion_tokens / elapsed if elapsed > 0 else 0
+        
         # Append to history in Cohere format
         chat_history.append({"role": "USER", "message": prompt})
         chat_history.append({"role": "CHATBOT", "message": reply})
         
-        return reply, usage, chat_history
+        return reply, usage, tps, chat_history
     except Exception as e:
         print(f"Request failed: {e}")
         return None, chat_history
@@ -124,14 +130,14 @@ def main():
         if result[0] is None:
             continue
 
-        reply, usage, chat_history = result
+        reply, usage, tps, chat_history = result
 
         print(f"\033[33m{MODEL} > \033[0m{reply}")
         
         if usage:
             p_tokens = usage.get('input_tokens', '?')
             c_tokens = usage.get('output_tokens', '?')
-            print(f"\033[90m[tokens: {p_tokens} in / {c_tokens} out]\033[0m\n")
+            print(f"\033[90m[tokens: {p_tokens} in / {c_tokens} out | SPEED: {tps:.2f} tokens/sec]\033[0m\n")
         else:
             print()
 

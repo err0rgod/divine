@@ -148,7 +148,8 @@
                         
                         <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Target Model</h3>
                         <p class="text-xs text-zinc-500 mb-3">The model the proxy will spoof (e.g. gpt-5.5, claude-opus-4-8).</p>
-                        <input type="text" id="target-model" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-sm font-mono text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow" placeholder="gpt-5.5">
+                        <input type="text" id="target-model" list="model-datalist" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-sm font-mono text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow" placeholder="gpt-5.5">
+                        <datalist id="model-datalist"></datalist>
                     </div>
                     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/50 transition-shadow">
                         <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">External App API Keys</h3>
@@ -313,6 +314,26 @@
                 if (data.keys && Array.isArray(data.keys)) {
                     keysTa.value = data.keys.join('\n');
                 }
+                
+                // Fetch available models and populate datalist
+                fetch('/api/dashboard/models')
+                    .then(r => r.json())
+                    .then(modelsData => {
+                        const updateDatalist = () => {
+                            const provider = activeProxySelect.value;
+                            const datalist = document.getElementById('model-datalist');
+                            datalist.innerHTML = '';
+                            if (modelsData[provider]) {
+                                modelsData[provider].forEach(m => {
+                                    const opt = document.createElement('option');
+                                    opt.value = m;
+                                    datalist.appendChild(opt);
+                                });
+                            }
+                        };
+                        activeProxySelect.addEventListener('change', updateDatalist);
+                        updateDatalist();
+                    });
             });
 
         Promise.all([

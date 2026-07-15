@@ -22,8 +22,9 @@ CURRENT STATUS:
 import requests
 import json
 import sys
+import time
 
-API_KEY = os.environ.get("MISTRAL_API_API_KEY")
+API_KEY = os.environ.get("MISTRAL_API_KEY")
 BASE_URL = "https://api.mistral.ai/v1"
 
 # Using Codestral, Mistral's flagship coding model
@@ -48,12 +49,14 @@ def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
     }
 
     try:
+        start_time = time.time()
         response = requests.post(
             f"{BASE_URL}/chat/completions",
             headers=HEADERS,
             json=payload,
             timeout=120,
         )
+        elapsed = time.time() - start_time
 
         if response.status_code != 200:
             print(f"Error {response.status_code}: {response.text}")
@@ -62,9 +65,12 @@ def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
         data = response.json()
         reply = data["choices"][0]["message"]["content"]
         usage = data.get("usage", {})
+        
+        completion_tokens = usage.get('completion_tokens', 0)
+        tps = completion_tokens / elapsed if elapsed > 0 else 0
 
         conversation.append({"role": "assistant", "content": reply})
-        return reply, usage, conversation
+        return reply, usage, tps, conversation
     except Exception as e:
         print(f"Request failed: {e}")
         return None, conversation
@@ -119,10 +125,10 @@ def main():
         if result[0] is None:
             continue
 
-        reply, usage, conversation = result
+        reply, usage, tps, conversation = result
 
         print(f"\033[33m{MODEL} > \033[0m{reply}")
-        print(f"\033[90m[tokens: {usage.get('prompt_tokens', '?')} in / {usage.get('completion_tokens', '?')} out]\033[0m\n")
+        print(f"\033[90m[tokens: {usage.get('prompt_tokens', '?')} in / {usage.get('completion_tokens', '?')} out | SPEED: {tps:.2f} tokens/sec]\033[0m\n")
 
 if __name__ == "__main__":
     main()

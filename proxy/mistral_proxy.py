@@ -7,7 +7,7 @@ import os
 #  $env:ANTHROPIC_API_KEY="dummy_key"
 # $env:ANTHROPIC_BASE_URL="http://127.0.0.1:8000"
 
-PORT = 6900  # using 6900 for proxy
+PORT = 8000  # using 8000 for proxy
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 MISTRAL_API_KEYS = [
     "pasOCuI0UgqFN1ySWUduXaozqG29vQbh",
@@ -19,8 +19,9 @@ def get_target_model(default):
     try:
         import json
         with open("D:/divine/config/proxy_config.json", "r") as f:
-            return json.load(f).get("target_model", default)
-    except:
+            val = json.load(f).get("target_model")
+            return val if val else default
+    except Exception:
         return default
 
 def anthropic_to_mistral_request(anthropic_data):
@@ -151,24 +152,55 @@ class MistralProxyHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Mistral Proxy is running!")
+        if self.path.endswith("/v1/models"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            models_resp = {
+                "object": "list",
+                "data": [
+                    {"id": "claude-3-7-sonnet-20250219", "type": "model", "created_at": 1739923200},
+                    {"id": "claude-3-5-sonnet-20241022", "type": "model", "created_at": 1729555200},
+                    {"id": "claude-3-5-haiku-20241022", "type": "model", "created_at": 1729555200},
+                    {"id": "claude-haiku-4-5-20251001", "type": "model", "created_at": 1735689600},
+                    {"id": "claude-3-opus-20240229", "type": "model", "created_at": 1709164800}
+                ]
+            }
+            self.wfile.write(json.dumps(models_resp).encode('utf-8'))
+        else:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Mistral Proxy is running!")
 
     def do_POST(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length) if content_length > 0 else b""
             
-            anthropic_req = json.loads(body.decode('utf-8'))
-            original_model = anthropic_req.get("model", "claude-3-5-sonnet-20241022")
+            req_json = json.loads(body.decode('utf-8'))
+            original_model = req_json.get("model", "claude-3-5-sonnet-20241022")
             
-            # Convert Anthropic format to Mistral format
-            mistral_req = anthropic_to_mistral_request(anthropic_req)
+            is_anthropic = self.path.endswith("/v1/messages")
+            is_stream = req_json.get("stream", False)
+            
+            if is_anthropic:
+                mistral_req = anthropic_to_mistral_request(req_json)
+            else:
+                mistral_req = req_json.copy()
+                mistral_req["model"] = get_target_model(DEFAULT_TARGET_MODEL)
+                
+            # Disable stream for target API to avoid json.loads crashing on SSE
+            mistral_req["stream"] = False
             mistral_body = json.dumps(mistral_req).encode('utf-8')
             
-            print(f"[Mistral Proxy] Translated request for Mistral API (Target Model: {DEFAULT_TARGET_MODEL})")
+            print(f"[Mistral Proxy] Handling {'Anthropic' if is_anthropic else 'OpenAI'} request (Target Model: {DEFAULT_TARGET_MODEL})")
             
+            if not MISTRAL_API_KEYS:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(b'{"error": {"message": "No API keys found."}}')
+                return
+
             last_error = None
             for key in MISTRAL_API_KEYS:
                 req = urllib.request.Request(MISTRAL_API_URL, data=mistral_body, method="POST")
@@ -181,9 +213,43 @@ class MistralProxyHandler(http.server.BaseHTTPRequestHandler):
                         resp_body = response.read()
                         mistral_resp = json.loads(resp_body.decode('utf-8'))
                         
-                        # Convert Mistral format back to Anthropic format for Claude Code
-                        anthropic_resp = mistral_to_anthropic_response(mistral_resp, original_model)
-                        final_body = json.dumps(anthropic_resp).encode('utf-8')
+                        if is_anthropic:
+                            final_resp = mistral_to_anthropic_response(mistral_resp, original_model)
+                        else:
+                            final_resp = mistral_resp
+                            
+                        # Fake stream to prevent client crash
+                        if is_stream:
+                            self.send_response(200)
+                            self.send_header("Content-Type", "text/event-stream")
+                            self.end_headers()
+                            
+                            if is_anthropic:
+                                msg_start = final_resp.copy()
+                                msg_start["content"] = []
+                                self.wfile.write(b'event: message_start\ndata: ' + json.dumps({"type": "message_start", "message": msg_start}).encode() + b'\n\n')
+                                self.wfile.write(b'event: content_block_start\ndata: {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}\n\n')
+                                text_content = final_resp["content"][0]["text"] if final_resp.get("content") else ""
+                                self.wfile.write(b'event: content_block_delta\ndata: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": ' + json.dumps(text_content).encode() + b'}}\n\n')
+                                self.wfile.write(b'event: content_block_stop\ndata: {"type": "content_block_stop", "index": 0}\n\n')
+                                self.wfile.write(b'event: message_delta\ndata: {"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence": null}}\n\n')
+                                self.wfile.write(b'event: message_stop\ndata: {"type": "message_stop"}\n\n')
+                            else:
+                                chunk = {
+                                    "id": final_resp.get("id", "chatcmpl-123"),
+                                    "object": "chat.completion.chunk",
+                                    "created": final_resp.get("created", 0),
+                                    "model": final_resp.get("model", "model"),
+                                    "choices": [{"index": 0, "delta": {"content": final_resp["choices"][0]["message"].get("content", "")}, "finish_reason": None}]
+                                }
+                                self.wfile.write(b'data: ' + json.dumps(chunk).encode('utf-8') + b'\n\n')
+                                end_chunk = chunk.copy()
+                                end_chunk["choices"] = [{"index": 0, "delta": {}, "finish_reason": "stop"}]
+                                self.wfile.write(b'data: ' + json.dumps(end_chunk).encode('utf-8') + b'\n\n')
+                                self.wfile.write(b'data: [DONE]\n\n')
+                            return
+
+                        final_body = json.dumps(final_resp).encode('utf-8')
                         
                         self.send_response(200)
                         self.send_header("Content-Type", "application/json")
@@ -197,7 +263,8 @@ class MistralProxyHandler(http.server.BaseHTTPRequestHandler):
                         continue  # Try next key
                     else:
                         error_body = e.read()
-                        print(f"[Mistral Proxy Error] HTTP {e.code}: {error_body.decode('utf-8', errors='ignore')}")
+                        safe_err = error_body.decode('utf-8', errors='ignore').encode('ascii', errors='replace').decode('ascii')
+                        print(f"[Mistral Proxy Error] HTTP {e.code}: {safe_err}")
                         self.send_response(e.code)
                         for k, v in e.headers.items():
                             if k.lower() not in ['transfer-encoding', 'connection']:

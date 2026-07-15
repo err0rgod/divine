@@ -1,16 +1,17 @@
 import json
 import os
 from threading import Lock
+from typing import Dict, List, Any
 
 CONFIG_FILE = "D:/divine/config/dashboard_config.json"
 STATS_FILE = "D:/divine/config/dashboard_stats.json"
 
 class StateManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.lock = Lock()
         self._init_files()
 
-    def _init_files(self):
+    def _init_files(self) -> None:
         if not os.path.exists(CONFIG_FILE):
             # Read from .env initially to populate config
             from dotenv import dotenv_values
@@ -66,12 +67,12 @@ class StateManager:
                     "provider_usage": {}
                 }, f, indent=4)
 
-    def get_keys(self):
+    def get_keys(self) -> Dict[str, List[str]]:
         with self.lock:
             with open(CONFIG_FILE, 'r') as f:
                 return json.load(f).get("keys", {})
 
-    def update_keys(self, keys_dict):
+    def update_keys(self, keys_dict: Dict[str, List[str]]) -> None:
         with self.lock:
             data = {"keys": keys_dict}
             with open(CONFIG_FILE, 'w') as f:
@@ -79,7 +80,7 @@ class StateManager:
             # Also sync back to .env? (Optional, but good for local CLI tools)
             self._sync_to_env(keys_dict)
 
-    def _sync_to_env(self, keys_dict):
+    def _sync_to_env(self, keys_dict: Dict[str, List[str]]) -> None:
         env_path = "D:/divine/.env"
         if not os.path.exists(env_path):
             return
@@ -87,12 +88,20 @@ class StateManager:
             lines = f.readlines()
             
         new_lines = []
+        upper_keys = {k.upper(): v for k, v in keys_dict.items()}
+        
         for line in lines:
             if "=" in line:
-                k = line.split("=")[0]
-                provider = k.split("_")[0].capitalize()
-                if provider in keys_dict and "API_KEY" in k:
-                    # Don't keep duplicates if we overwrite
+                k = line.split("=")[0].strip().upper()
+                found = False
+                for provider in upper_keys:
+                    if k in (f"{provider}_API_KEY", f"{provider}_API_KEYS"):
+                        found = True
+                        break
+                    if provider == "NVIDIA" and k == "NVIDIA_NIM_API_KEY":
+                        found = True
+                        break
+                if found:
                     continue
             new_lines.append(line)
             
@@ -103,18 +112,17 @@ class StateManager:
                 if provider.upper() == "NVIDIA":
                     new_lines.append(f"NVIDIA_NIM_API_KEY={key_str}\n")
                 else:
-                    new_lines.append(f"{provider.upper()}_API_KEYS={key_str}\n")
-                    new_lines.append(f"{provider.upper()}_API_KEY={key_list[0]}\n")
+                    new_lines.append(f"{provider.upper()}_API_KEY={key_str}\n")
                 
         with open(env_path, 'w') as f:
             f.writelines(new_lines)
 
-    def get_stats(self):
+    def get_stats(self) -> Dict[str, Any]:
         with self.lock:
             with open(STATS_FILE, 'r') as f:
                 return json.load(f)
 
-    def add_usage(self, provider, model, tokens):
+    def add_usage(self, provider: str, model: str, tokens: int) -> None:
         """Estimate savings and track usage"""
         with self.lock:
             with open(STATS_FILE, 'r') as f:

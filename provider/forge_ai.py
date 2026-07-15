@@ -21,8 +21,9 @@ import time
 import sys
 
 # Support fetching multiple keys separated by commas for load-balancing
-KEYS_STRING = os.environ.get("FORGE_AI_API_KEYS", os.environ.get("FORGE_AI_API_KEY", ""))
-KEYS = [k.strip() for k in KEYS_STRING.split(",") if k.strip()]
+KEYS_STRING = os.environ.get("FORGE_AI_API_KEYS", os.environ.get("FORGEAI_API_KEY", ""))
+# KEYS = [k.strip() for k in KEYS_STRING.split(",") if k.strip()]
+KEYS = ["fg-c4f5cd9946994f4bafe4c8b8cb8affd1"]
 
 BASE_URL = "https://forge-gateway-api.fly.dev/v1"
 

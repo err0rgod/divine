@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Tuple
 import sys
 import os
 import shutil
@@ -27,11 +27,11 @@ class ChatRequest(BaseModel):
     loop: Optional[bool] = False
 
 # Global log store for real-time Agent Loop UI updates
-agent_logs = {}
+agent_logs: Dict[str, List[str]] = {}
 
 import json
 
-def load_verified_models():
+def load_verified_models() -> Dict[str, List[str]]:
     """Dynamically parses config/models.json to ensure only verified, online models are selectable."""
     try:
         with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
@@ -49,17 +49,17 @@ def load_verified_models():
 UI_PROVIDERS = load_verified_models()
 
 @app.get("/", response_class=HTMLResponse)
-async def get_dashboard(request: Request):
+async def get_dashboard(request: Request) -> HTMLResponse:
     # Reload models on page refresh so it's always up to date if models.txt changes
     latest_providers = load_verified_models()
     return templates.TemplateResponse("index.html", {"request": request, "providers": latest_providers})
 
 @app.get("/api/providers")
-async def get_providers():
+async def get_providers() -> JSONResponse:
     return JSONResponse(content=load_verified_models())
 
 @app.get("/api/dashboard/routing")
-async def get_routing():
+async def get_routing() -> JSONResponse:
     try:
         from engine.orchestrator import load_routing_pools
         return JSONResponse(content=load_routing_pools())
@@ -67,7 +67,7 @@ async def get_routing():
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.post("/api/dashboard/routing")
-async def update_routing(req: Request):
+async def update_routing(req: Request) -> Dict[str, Any]:
     routing_data = await req.json()
     try:
         with open("D:/divine/config/routing.json", "w", encoding="utf-8") as f:
@@ -77,15 +77,15 @@ async def update_routing(req: Request):
         return {"success": False, "error": str(e)}
 
 @app.get("/api/dashboard/proxy")
-async def get_proxy_config():
+async def get_proxy_config() -> JSONResponse:
     try:
         with open("D:/divine/config/proxy_config.json", "r", encoding="utf-8") as f:
             return JSONResponse(content=json.load(f))
-    except:
+    except Exception:
         return JSONResponse(content={"aliases": {}, "keys": {}})
 
 @app.post("/api/dashboard/proxy")
-async def update_proxy_config(req: Request):
+async def update_proxy_config(req: Request) -> Dict[str, Any]:
     proxy_data = await req.json()
     try:
         with open("D:/divine/config/proxy_config.json", "w", encoding="utf-8") as f:
@@ -95,7 +95,7 @@ async def update_proxy_config(req: Request):
         return {"success": False, "error": str(e)}
 
 @app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:
     uploads_dir = agent_tools.UPLOADS_DIR
     filepath = os.path.join(uploads_dir, file.filename)
     with open(filepath, "wb") as buffer:
@@ -103,7 +103,7 @@ async def upload_file(file: UploadFile = File(...)):
     return {"success": True, "filename": file.filename, "filepath": filepath}
 
 @app.get("/api/logs/{chat_id}")
-async def get_logs(chat_id: str):
+async def get_logs(chat_id: str) -> Dict[str, List[str]]:
     if chat_id in agent_logs:
         logs = agent_logs[chat_id]
         agent_logs[chat_id] = [] # Clear fetched logs
@@ -111,7 +111,7 @@ async def get_logs(chat_id: str):
     return {"logs": []}
 
 @app.post("/api/chat")
-async def process_chat(req: ChatRequest):
+async def process_chat(req: ChatRequest) -> Dict[str, Any]:
     chat_id = req.chat_id
     if chat_id not in agent_logs:
         agent_logs[chat_id] = []
@@ -241,7 +241,7 @@ if os.path.exists(legacy_file):
         print(f"Migration error: {e}")
 
 @app.get("/api/history")
-async def get_history():
+async def get_history() -> JSONResponse:
     chats = []
     try:
         for filename in os.listdir(CHATS_DIR):
@@ -253,7 +253,7 @@ async def get_history():
     return JSONResponse(content=chats)
 
 @app.post("/api/history/{chat_id}")
-async def save_history(chat_id: str, req: Request):
+async def save_history(chat_id: str, req: Request) -> Dict[str, Any]:
     try:
         chat_data = await req.json()
         filepath = os.path.join(CHATS_DIR, f"{chat_id}.json")
@@ -265,7 +265,7 @@ async def save_history(chat_id: str, req: Request):
         return {"success": False, "error": str(e)}
 
 @app.delete("/api/history/{chat_id}")
-async def delete_history(chat_id: str):
+async def delete_history(chat_id: str) -> Dict[str, Any]:
     try:
         filepath = os.path.join(CHATS_DIR, f"{chat_id}.json")
         if os.path.exists(filepath):
@@ -278,25 +278,25 @@ async def delete_history(chat_id: str):
 from engine.state_manager import state_manager
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def get_dashboard_page(request: Request):
+async def get_dashboard_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 @app.get("/api/dashboard/stats")
-async def get_dashboard_stats():
+async def get_dashboard_stats() -> JSONResponse:
     return JSONResponse(content=state_manager.get_stats())
 
 @app.get("/api/dashboard/keys")
-async def get_dashboard_keys():
+async def get_dashboard_keys() -> JSONResponse:
     return JSONResponse(content=state_manager.get_keys())
 
 @app.post("/api/dashboard/keys")
-async def update_dashboard_keys(req: Request):
+async def update_dashboard_keys(req: Request) -> Dict[str, Any]:
     keys_dict = await req.json()
     state_manager.update_keys(keys_dict)
     return {"success": True}
 
 @app.post("/api/dashboard/keys/test")
-async def test_dashboard_keys(req: Request):
+async def test_dashboard_keys(req: Request) -> Dict[str, Any]:
     data = await req.json()
     provider = data.get("provider")
     test_key = data.get("key") # Get the specific key to test
@@ -334,15 +334,15 @@ async def test_dashboard_keys(req: Request):
         return {"success": False, "error": str(e)}
 
 @app.get("/api/dashboard/models")
-async def get_dashboard_models():
+async def get_dashboard_models() -> JSONResponse:
     try:
         with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
             return JSONResponse(content=json.load(f))
-    except:
+    except Exception:
         return JSONResponse(content={})
 
 @app.post("/api/dashboard/models")
-async def update_dashboard_models(req: Request):
+async def update_dashboard_models(req: Request) -> Dict[str, Any]:
     models_dict = await req.json()
     try:
         # Load existing models.json to merge instead of overwrite
@@ -351,7 +351,7 @@ async def update_dashboard_models(req: Request):
             with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
                 try:
                     existing = json.load(f)
-                except:
+                except Exception:
                     pass
         
         # Merge new configurations with existing (keeps Auto-Select, etc.)

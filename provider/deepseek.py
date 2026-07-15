@@ -9,6 +9,11 @@ DeepSeek API Client
 PROVIDER INFO:
 - Base URL: https://api.deepseek.com
 - Endpoint Style: Fully OpenAI Compatible
+
+Models:
+    deepseek-v4-pro
+    deepseek-v4-flash
+    deepseek-chat
 """
 
 import requests
