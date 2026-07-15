@@ -148,6 +148,134 @@ def mistral_to_anthropic_response(mistral_resp, original_model):
         }
     }
 
+
+def handle_openai_stream(handler, response, original_model, is_anthropic):
+    handler.send_response(200)
+    handler.send_header("Content-Type", "text/event-stream")
+    handler.send_header("Cache-Control", "no-cache")
+    handler.send_header("Connection", "keep-alive")
+    handler.end_headers()
+    
+    if not is_anthropic:
+        for line in response.iter_lines():
+            if line:
+                handler.wfile.write(line + b'\n')
+                handler.wfile.flush()
+        return
+
+    import os
+    import json
+    msg_id = "msg_proxy_" + os.urandom(4).hex()
+    
+    start_event = {
+        "type": "message_start",
+        "message": {
+            "id": msg_id, "type": "message", "role": "assistant",
+            "content": [], "model": original_model,
+            "stop_reason": None, "stop_sequence": None,
+            "usage": {"input_tokens": 0, "output_tokens": 0}
+        }
+    }
+    handler.wfile.write(f"event: message_start\ndata: {json.dumps(start_event)}\n\n".encode('utf-8'))
+
+    current_block_index = -1
+    in_text_block = False
+    active_tools = {}
+    sent_stop = False
+
+    for line in response.iter_lines():
+        if not line: continue
+        line = line.decode('utf-8').strip()
+        if not line or not line.startswith("data: "):
+            continue
+            
+        data_str = line[6:]
+        if data_str == "[DONE]":
+            break
+            
+        try:
+            chunk = json.loads(data_str)
+        except:
+            continue
+            
+        if not chunk.get("choices"):
+            continue
+            
+        delta = chunk["choices"][0].get("delta", {})
+        finish_reason = chunk["choices"][0].get("finish_reason")
+        
+        if "content" in delta and delta["content"] is not None:
+            content = delta["content"]
+            if not in_text_block:
+                current_block_index += 1
+                in_text_block = True
+                t_start = {"type": "content_block_start", "index": current_block_index, "content_block": {"type": "text", "text": ""}}
+                handler.wfile.write(f"event: content_block_start\ndata: {json.dumps(t_start)}\n\n".encode('utf-8'))
+            
+            t_delta = {"type": "content_block_delta", "index": current_block_index, "delta": {"type": "text_delta", "text": content}}
+            handler.wfile.write(f"event: content_block_delta\ndata: {json.dumps(t_delta)}\n\n".encode('utf-8'))
+            handler.wfile.flush()
+            
+        if "tool_calls" in delta:
+            if in_text_block:
+                in_text_block = False
+                t_stop = {"type": "content_block_stop", "index": current_block_index}
+                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
+                
+            for tc in delta["tool_calls"]:
+                tc_index = tc["index"]
+                if tc_index not in active_tools:
+                    current_block_index += 1
+                    active_tools[tc_index] = current_block_index
+                    
+                    t_id = tc.get("id", "call_" + os.urandom(4).hex())
+                    t_name = tc.get("function", {}).get("name", "unknown")
+                    
+                    tl_start = {"type": "content_block_start", "index": current_block_index, "content_block": {"type": "tool_use", "id": t_id, "name": t_name, "input": {}}}
+                    handler.wfile.write(f"event: content_block_start\ndata: {json.dumps(tl_start)}\n\n".encode('utf-8'))
+                    
+                if "function" in tc and "arguments" in tc["function"]:
+                    args_str = tc["function"]["arguments"]
+                    if args_str:
+                        tl_delta = {"type": "content_block_delta", "index": active_tools[tc_index], "delta": {"type": "input_json_delta", "partial_json": args_str}}
+                        handler.wfile.write(f"event: content_block_delta\ndata: {json.dumps(tl_delta)}\n\n".encode('utf-8'))
+                        handler.wfile.flush()
+                        
+        if finish_reason:
+            if in_text_block:
+                t_stop = {"type": "content_block_stop", "index": current_block_index}
+                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
+                in_text_block = False
+                
+            for tc_index in active_tools:
+                tl_stop = {"type": "content_block_stop", "index": active_tools[tc_index]}
+                handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(tl_stop)}\n\n".encode('utf-8'))
+                
+            stop_reason_str = "end_turn"
+            if finish_reason == "tool_calls": stop_reason_str = "tool_use"
+            elif finish_reason == "length": stop_reason_str = "max_tokens"
+            
+            m_delta = {"type": "message_delta", "delta": {"stop_reason": stop_reason_str, "stop_sequence": None}, "usage": {"output_tokens": 0}}
+            handler.wfile.write(f"event: message_delta\ndata: {json.dumps(m_delta)}\n\n".encode('utf-8'))
+            handler.wfile.write(b"event: message_stop\ndata: {\"type\": \"message_stop\"}\n\n")
+            handler.wfile.flush()
+            sent_stop = True
+            break
+
+    if not sent_stop:
+        if in_text_block:
+            t_stop = {"type": "content_block_stop", "index": current_block_index}
+            handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(t_stop)}\n\n".encode('utf-8'))
+            
+        for tc_index in active_tools:
+            tl_stop = {"type": "content_block_stop", "index": active_tools[tc_index]}
+            handler.wfile.write(f"event: content_block_stop\ndata: {json.dumps(tl_stop)}\n\n".encode('utf-8'))
+            
+        m_delta = {"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence": None}, "usage": {"output_tokens": 0}}
+        handler.wfile.write(f"event: message_delta\ndata: {json.dumps(m_delta)}\n\n".encode('utf-8'))
+        handler.wfile.write(b'event: message_stop\ndata: {"type": "message_stop"}\n\n')
+        handler.wfile.flush()
+
 class MistralProxyHandler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.send_response(200)
@@ -176,130 +304,85 @@ class MistralProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            content_length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(content_length) if content_length > 0 else b""
-            
+            import requests
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length) if length > 0 else b""
             req_json = json.loads(body.decode('utf-8'))
-            original_model = req_json.get("model", "claude-3-5-sonnet-20241022")
             
+            orig_model = req_json.get("model", "claude-3-5-sonnet")
             is_anthropic = self.path.split("?")[0].endswith("/v1/messages")
             is_stream = req_json.get("stream", False)
             
-            if is_anthropic:
-                mistral_req = anthropic_to_mistral_request(req_json)
+            if is_anthropic and "anthropic_to_mistral_request" in globals():
+                target_req = anthropic_to_mistral_request(req_json)
+            elif is_anthropic and "anthropic_to_agentrouter_request" in globals():
+                target_req = anthropic_to_agentrouter_request(req_json)
+            elif is_anthropic and "anthropic_to_openai_request" in globals():
+                target_req = anthropic_to_openai_request(req_json)
             else:
-                mistral_req = req_json.copy()
-                mistral_req["model"] = get_target_model(DEFAULT_TARGET_MODEL)
-                
-            # Disable stream for target API to avoid json.loads crashing on SSE
-            mistral_req["stream"] = False
+                target_req = req_json.copy()
+                if "get_target_model" in globals():
+                    target_req["model"] = get_target_model(DEFAULT_TARGET_MODEL)
             
-            # --- ZHIPU/GLM SAFETY PATCH ---
+            target_req["stream"] = is_stream
+            
+            # Hotfix: Ensure model is string
+            if ": " in target_req.get("model", ""): target_req["model"] = target_req["model"].split(": ")[1]
+            
+            # ZHIPU/GLM SAFETY PATCH
             if is_anthropic:
-                target_obj = mistral_req
-                for m in target_obj.get("messages", []):
-                    if m["role"] == "assistant" and "content" not in m:
+                for m in target_req.get("messages", []):
+                    if m.get("role") == "assistant" and "content" not in m:
                         m["content"] = ""
                     if isinstance(m.get("content"), list):
                         m["content"] = "\n".join([str(item) for item in m["content"]])
-            # ------------------------------
-
-            mistral_body = json.dumps(mistral_req).encode('utf-8')
             
-            print(f"[Mistral Proxy] Handling {'Anthropic' if is_anthropic else 'OpenAI'} request (Target Model: {DEFAULT_TARGET_MODEL})")
+            # Key resolution
+            if 'MISTRAL_API_KEYS' in globals(): key = MISTRAL_API_KEYS[0] if MISTRAL_API_KEYS else ""
+            elif 'AGENTROUTER_API_KEYS' in globals(): key = AGENTROUTER_API_KEYS[0] if AGENTROUTER_API_KEYS else ""
+            else: key = API_KEYS[0] if 'API_KEYS' in globals() and API_KEYS else ""
             
-            if not MISTRAL_API_KEYS:
-                self.send_response(500)
-                self.end_headers()
-                self.wfile.write(b'{"error": {"message": "No API keys found."}}')
-                return
-
-            last_error = None
-            for key in MISTRAL_API_KEYS:
-                req = urllib.request.Request(MISTRAL_API_URL, data=mistral_body, method="POST")
-                req.add_header("Content-Type", "application/json")
-                req.add_header("Authorization", f"Bearer {key}")
-                req.add_header("Accept", "application/json")
-                
-                try:
-                    with urllib.request.urlopen(req, timeout=120) as response:
-                        resp_body = response.read()
-                        mistral_resp = json.loads(resp_body.decode('utf-8'))
-                        
-                        if is_anthropic:
-                            final_resp = mistral_to_anthropic_response(mistral_resp, original_model)
-                        else:
-                            final_resp = mistral_resp
-                            
-                        # Fake stream to prevent client crash
-                        if is_stream:
-                            self.send_response(200)
-                            self.send_header("Content-Type", "text/event-stream")
-                            self.end_headers()
-                            
-                            if is_anthropic:
-                                msg_start = final_resp.copy()
-                                msg_start["content"] = []
-                                self.wfile.write(b'event: message_start\ndata: ' + json.dumps({"type": "message_start", "message": msg_start}).encode() + b'\n\n')
-                                self.wfile.write(b'event: content_block_start\ndata: {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}\n\n')
-                                text_content = final_resp["content"][0]["text"] if final_resp.get("content") else ""
-                                self.wfile.write(b'event: content_block_delta\ndata: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": ' + json.dumps(text_content).encode() + b'}}\n\n')
-                                self.wfile.write(b'event: content_block_stop\ndata: {"type": "content_block_stop", "index": 0}\n\n')
-                                self.wfile.write(b'event: message_delta\ndata: {"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence": null}}\n\n')
-                                self.wfile.write(b'event: message_stop\ndata: {"type": "message_stop"}\n\n')
-                            else:
-                                chunk = {
-                                    "id": final_resp.get("id", "chatcmpl-123"),
-                                    "object": "chat.completion.chunk",
-                                    "created": final_resp.get("created", 0),
-                                    "model": final_resp.get("model", "model"),
-                                    "choices": [{"index": 0, "delta": {"content": final_resp["choices"][0]["message"].get("content", "")}, "finish_reason": None}]
-                                }
-                                self.wfile.write(b'data: ' + json.dumps(chunk).encode('utf-8') + b'\n\n')
-                                end_chunk = chunk.copy()
-                                end_chunk["choices"] = [{"index": 0, "delta": {}, "finish_reason": "stop"}]
-                                self.wfile.write(b'data: ' + json.dumps(end_chunk).encode('utf-8') + b'\n\n')
-                                self.wfile.write(b'data: [DONE]\n\n')
-                            return
-
-                        final_body = json.dumps(final_resp).encode('utf-8')
-                        
-                        self.send_response(200)
-                        self.send_header("Content-Type", "application/json")
-                        self.end_headers()
-                        self.wfile.write(final_body)
-                        return  # Successfully completed, exit loop and function
-                except urllib.error.HTTPError as e:
-                    if e.code == 429:
-                        print(f"[Mistral Proxy Warning] Key {key[:8]}... got HTTP 429 Rate Limit. Falling back to next key...")
-                        last_error = e
-                        continue  # Try next key
-                    else:
-                        error_body = e.read()
-                        safe_err = error_body.decode('utf-8', errors='ignore').encode('ascii', errors='replace').decode('ascii')
-                        print(f"[Mistral Proxy Error] HTTP {e.code}: {safe_err}")
-                        self.send_response(e.code)
-                        for k, v in e.headers.items():
-                            if k.lower() not in ['transfer-encoding', 'connection']:
-                                self.send_header(k, v)
-                        self.end_headers()
-                        self.wfile.write(error_body)
-                        return
-                        
-            # If all keys were exhausted due to 429 Rate Limits
-            if last_error:
-                error_body = last_error.read() if not hasattr(last_error, 'read_body') else getattr(last_error, 'read_body')
-                print("[Mistral Proxy Error] Exhausted all keys. Last error HTTP 429.")
-                self.send_response(last_error.code)
-                for k, v in last_error.headers.items():
-                    if k.lower() not in ['transfer-encoding', 'connection']:
+            # URL resolution
+            if 'MISTRAL_API_URL' in globals(): api_url = MISTRAL_API_URL
+            elif 'AGENTROUTER_API_URL' in globals(): api_url = AGENTROUTER_API_URL
+            else: api_url = API_URL
+            
+            headers = {
+                "Authorization": f"Bearer {key}",
+                "Accept": "text/event-stream" if is_stream else "application/json"
+            }
+            
+            response = requests.post(api_url, json=target_req, headers=headers, stream=is_stream, timeout=120)
+            
+            if response.status_code != 200:
+                self.send_response(response.status_code)
+                for k, v in response.headers.items():
+                    if k.lower() not in ['transfer-encoding', 'connection', 'content-length', 'content-encoding']:
                         self.send_header(k, v)
                 self.end_headers()
-                # e.read() can only be read once, so if it was read we'd need to cache it, but HTTPError is a file-like object so it's already read.
-                self.wfile.write(b'{"error": {"message": "Rate limit exceeded on all keys"}}')
+                self.wfile.write(response.content)
+                return
                 
+            if is_stream:
+                handle_openai_stream(self, response, orig_model, is_anthropic)
+                return
+                
+            resp_json = response.json()
+            if is_anthropic and "mistral_to_anthropic_response" in globals():
+                final_resp = mistral_to_anthropic_response(resp_json, orig_model)
+            elif is_anthropic and "agentrouter_to_anthropic_response" in globals():
+                final_resp = agentrouter_to_anthropic_response(resp_json, orig_model)
+            elif is_anthropic and "openai_to_anthropic_response" in globals():
+                final_resp = openai_to_anthropic_response(resp_json, orig_model)
+            else:
+                final_resp = resp_json
+                
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(final_resp).encode('utf-8'))
+            
         except Exception as e:
-            print(f"[Proxy Error] {e}")
             self.send_response(500)
             self.end_headers()
             self.wfile.write(str(e).encode())
