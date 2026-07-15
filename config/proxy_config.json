@@ -1,6 +1,6 @@
 {
     "active": "ForgeAI",
-    "target_model": "kimi-k2.7-code",
+    "target_model": "glm-5.2",
     "keys": [
         "sk-claudecode-123",
         "sk-codex-123",

@@ -6,8 +6,8 @@ __pycache__
 context
 chats.json
 
-dashboard_config.json
+proxy_keys.json
 routing.json
 
-config/dashboard_config.json
+config/proxy_keys.json
 config/routing.json

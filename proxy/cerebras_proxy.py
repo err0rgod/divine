@@ -5,22 +5,13 @@ import json
 import os
 
 PORT = 8000
-FORGE_AI_API_URL = "https://forge-gateway-api.fly.dev/v1/chat/completions"
-DEFAULT_TARGET_MODEL = "gpt-5.5"
-
-def load_keys():
-    try:
-        with open("D:/divine/config/proxy_keys.json", "r") as f:
-            data = json.load(f)
-            return data.get("keys", {}).get("ForgeAI", [])
-    except Exception:
-        return []
-
-FORGE_API_KEYS = load_keys()
+API_URL = "https://api.cerebras.ai/v1/chat/completions"
+API_KEYS = [os.environ.get("CEREBRAS_API_KEY")]
+DEFAULT_TARGET_MODEL = "gemma-4-31b"
+PROXY_NAME = "Cerebras"
 
 def get_target_model(default):
     try:
-        import json
         with open("D:/divine/config/proxy_config.json", "r") as f:
             val = json.load(f).get("target_model")
             return val if val else default
@@ -28,34 +19,22 @@ def get_target_model(default):
         return default
 
 def anthropic_to_openai_request(anthropic_data):
-    req = {
-        "model": get_target_model(DEFAULT_TARGET_MODEL),
-        "messages": [],
-    }
+    req = {"model": get_target_model(DEFAULT_TARGET_MODEL), "messages": []}
     
-    system_prompt = anthropic_data.get("system")
-    if system_prompt:
-        if isinstance(system_prompt, str):
-            req["messages"].append({"role": "system", "content": system_prompt})
-        elif isinstance(system_prompt, list):
-            sys_text = "\n".join(b["text"] for b in system_prompt if b.get("type") == "text")
-            req["messages"].append({"role": "system", "content": sys_text})
+    sys_p = anthropic_data.get("system")
+    if sys_p:
+        if isinstance(sys_p, str): req["messages"].append({"role": "system", "content": sys_p})
+        elif isinstance(sys_p, list): req["messages"].append({"role": "system", "content": "\n".join(b.get("text", "") for b in sys_p if b.get("type") == "text")})
             
-    if "max_tokens" in anthropic_data:
-        req["max_tokens"] = anthropic_data["max_tokens"]
-    if "temperature" in anthropic_data:
-        req["temperature"] = anthropic_data["temperature"]
+    if "max_tokens" in anthropic_data: req["max_tokens"] = anthropic_data["max_tokens"]
+    if "temperature" in anthropic_data: req["temperature"] = anthropic_data["temperature"]
         
     if "tools" in anthropic_data:
         req["tools"] = []
         for t in anthropic_data["tools"]:
             req["tools"].append({
                 "type": "function",
-                "function": {
-                    "name": t["name"],
-                    "description": t.get("description", ""),
-                    "parameters": t.get("input_schema", {})
-                }
+                "function": {"name": t["name"], "description": t.get("description", ""), "parameters": t.get("input_schema", {})}
             })
             
     for msg in anthropic_data.get("messages", []):
@@ -74,38 +53,23 @@ def anthropic_to_openai_request(anthropic_data):
                 text_content += block["text"]
             elif block["type"] == "tool_use":
                 tool_calls.append({
-                    "id": block["id"],
-                    "type": "function",
-                    "function": {
-                        "name": block["name"],
-                        "arguments": json.dumps(block["input"])
-                    }
+                    "id": block["id"], "type": "function", "function": {"name": block["name"], "arguments": json.dumps(block["input"])}
                 })
             elif block["type"] == "tool_result":
-                tool_msg = {
-                    "role": "tool",
-                    "tool_call_id": block["tool_use_id"],
-                    "content": ""
-                }
-                if isinstance(block.get("content"), str):
-                    tool_msg["content"] = block["content"]
-                elif isinstance(block.get("content"), list):
-                    texts = [b["text"] for b in block["content"] if b["type"] == "text"]
-                    tool_msg["content"] = "\n".join(texts)
+                tool_msg = {"role": "tool", "tool_call_id": block["tool_use_id"], "content": ""}
+                b_content = block.get("content")
+                if isinstance(b_content, str): tool_msg["content"] = b_content
+                elif isinstance(b_content, list): tool_msg["content"] = "\n".join(b["text"] for b in b_content if b.get("type") == "text")
                 req["messages"].append(tool_msg)
                 
         if role == "assistant":
             ast_msg = {"role": "assistant"}
-            if text_content:
-                ast_msg["content"] = text_content
-            else:
-                ast_msg["content"] = ""
-            if tool_calls:
-                ast_msg["tool_calls"] = tool_calls
+            if text_content: ast_msg["content"] = text_content
+            else: ast_msg["content"] = ""
+            if tool_calls: ast_msg["tool_calls"] = tool_calls
             req["messages"].append(ast_msg)
         elif role == "user":
-            if text_content:
-                req["messages"].append({"role": "user", "content": text_content})
+            if text_content: req["messages"].append({"role": "user", "content": text_content})
                 
     return req
 
@@ -114,36 +78,21 @@ def openai_to_anthropic_response(resp, original_model):
     msg = choice["message"]
     
     anthropic_content = []
-    if msg.get("content"):
-        anthropic_content.append({"type": "text", "text": msg["content"]})
+    if msg.get("content"): anthropic_content.append({"type": "text", "text": msg["content"]})
         
     if msg.get("tool_calls"):
         for tc in msg["tool_calls"]:
-            anthropic_content.append({
-                "type": "tool_use",
-                "id": tc["id"],
-                "name": tc["function"]["name"],
-                "input": json.loads(tc["function"]["arguments"])
-            })
+            anthropic_content.append({"type": "tool_use", "id": tc["id"], "name": tc["function"]["name"], "input": json.loads(tc["function"]["arguments"])})
             
     finish_reason = choice.get("finish_reason")
     stop_reason = "end_turn"
-    if finish_reason == "tool_calls":
-        stop_reason = "tool_use"
-    elif finish_reason == "length":
-        stop_reason = "max_tokens"
+    if finish_reason == "tool_calls": stop_reason = "tool_use"
+    elif finish_reason == "length": stop_reason = "max_tokens"
         
     return {
-        "id": "msg_forge_" + resp.get("id", "123"),
-        "type": "message",
-        "role": "assistant",
-        "model": original_model,
-        "content": anthropic_content,
-        "stop_reason": stop_reason,
-        "usage": {
-            "input_tokens": resp.get("usage", {}).get("prompt_tokens", 0),
-            "output_tokens": resp.get("usage", {}).get("completion_tokens", 0)
-        }
+        "id": "msg_proxy_" + resp.get("id", "123"), "type": "message", "role": "assistant", "model": original_model,
+        "content": anthropic_content, "stop_reason": stop_reason,
+        "usage": {"input_tokens": resp.get("usage", {}).get("prompt_tokens", 0), "output_tokens": resp.get("usage", {}).get("completion_tokens", 0)}
     }
 
 def handle_openai_stream(handler, response, original_model, is_anthropic):
@@ -252,7 +201,7 @@ def handle_openai_stream(handler, response, original_model, is_anthropic):
             
             m_delta = {"type": "message_delta", "delta": {"stop_reason": stop_reason_str, "stop_sequence": None}, "usage": {"output_tokens": 0}}
             handler.wfile.write(f"event: message_delta\ndata: {json.dumps(m_delta)}\n\n".encode('utf-8'))
-            handler.wfile.write(b"event: message_stop\ndata: {\"type\": \"message_stop\"}\n\n")
+            handler.wfile.write(b'event: message_stop\ndata: {"type": "message_stop"}\n\n')
             handler.wfile.flush()
             sent_stop = True
             break
@@ -271,31 +220,14 @@ def handle_openai_stream(handler, response, original_model, is_anthropic):
         handler.wfile.write(b'event: message_stop\ndata: {"type": "message_stop"}\n\n')
         handler.wfile.flush()
 
-class ForgeAIProxyHandler(http.server.BaseHTTPRequestHandler):
-    def do_HEAD(self):
-        self.send_response(200)
-        self.end_headers()
-
+class ProxyHandler(http.server.BaseHTTPRequestHandler):
+    def do_HEAD(self): self.send_response(200); self.end_headers()
     def do_GET(self):
         if self.path.endswith("/v1/models"):
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            models_resp = {
-                "object": "list",
-                "data": [
-                    {"id": "claude-3-7-sonnet-20250219", "type": "model", "created_at": 1739923200},
-                    {"id": "claude-3-5-sonnet-20241022", "type": "model", "created_at": 1729555200},
-                    {"id": "claude-3-5-haiku-20241022", "type": "model", "created_at": 1729555200},
-                    {"id": "claude-haiku-4-5-20251001", "type": "model", "created_at": 1735689600},
-                    {"id": "claude-3-opus-20240229", "type": "model", "created_at": 1709164800}
-                ]
-            }
-            self.wfile.write(json.dumps(models_resp).encode('utf-8'))
+            self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers()
+            self.wfile.write(b'{"object": "list", "data": [{"id": "claude-3-7-sonnet-20250219", "type": "model"}]}')
         else:
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"Forge AI Proxy is running!")
+            self.send_response(200); self.end_headers(); self.wfile.write(f"{PROXY_NAME} Proxy is running!".encode('utf-8'))
 
     def do_POST(self):
         try:
@@ -375,14 +307,12 @@ class ForgeAIProxyHandler(http.server.BaseHTTPRequestHandler):
         except ConnectionResetError:
             pass
 
-class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
-    daemon_threads = True
+class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer): daemon_threads = True
 
 if __name__ == "__main__":
-    if not FORGE_API_KEYS:
-        print("[WARNING] No Forge AI API keys found in config/proxy_keys.json!")
-    with ThreadedHTTPServer(("", PORT), ForgeAIProxyHandler) as httpd:
-        print(f"Forge AI Translation Proxy running at http://localhost:{PORT}/v1/messages")
-        print(f"Targeting Model: {DEFAULT_TARGET_MODEL}")
-        print(f"Loaded {len(FORGE_API_KEYS)} API Keys for Fallback!")
+    from dotenv import load_dotenv
+    load_dotenv('D:/divine/.env')
+    API_KEYS = [os.environ.get("CEREBRAS_API_KEY")]
+    with ThreadedHTTPServer(("", PORT), ProxyHandler) as httpd:
+        print(f"{PROXY_NAME} Translation Proxy running at http://localhost:{PORT}")
         httpd.serve_forever()

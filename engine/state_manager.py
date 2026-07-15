@@ -3,7 +3,7 @@ import os
 from threading import Lock
 from typing import Dict, List, Any
 
-CONFIG_FILE = "D:/divine/config/dashboard_config.json"
+CONFIG_FILE = "D:/divine/config/proxy_keys.json"
 STATS_FILE = "D:/divine/config/dashboard_stats.json"
 
 class StateManager:

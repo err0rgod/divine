@@ -84,7 +84,7 @@ def main():
     global MODEL
     import json
     try:
-        with open('../models.json' if os.path.exists('../models.json') else 'models.json', 'r') as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config', 'models.json'), 'r', encoding='utf-8') as f:
             db = json.load(f)
             avail = db.get("DeepSeek", [])
             if avail:

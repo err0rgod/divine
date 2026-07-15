@@ -100,6 +100,8 @@ def anthropic_to_mistral_request(anthropic_data):
             ast_msg = {"role": "assistant"}
             if text_content:
                 ast_msg["content"] = text_content
+            else:
+                ast_msg["content"] = ""
             if tool_calls:
                 ast_msg["tool_calls"] = tool_calls
             mistral_req["messages"].append(ast_msg)
@@ -180,7 +182,7 @@ class MistralProxyHandler(http.server.BaseHTTPRequestHandler):
             req_json = json.loads(body.decode('utf-8'))
             original_model = req_json.get("model", "claude-3-5-sonnet-20241022")
             
-            is_anthropic = self.path.endswith("/v1/messages")
+            is_anthropic = self.path.split("?")[0].endswith("/v1/messages")
             is_stream = req_json.get("stream", False)
             
             if is_anthropic:
@@ -191,6 +193,17 @@ class MistralProxyHandler(http.server.BaseHTTPRequestHandler):
                 
             # Disable stream for target API to avoid json.loads crashing on SSE
             mistral_req["stream"] = False
+            
+            # --- ZHIPU/GLM SAFETY PATCH ---
+            if is_anthropic:
+                target_obj = mistral_req
+                for m in target_obj.get("messages", []):
+                    if m["role"] == "assistant" and "content" not in m:
+                        m["content"] = ""
+                    if isinstance(m.get("content"), list):
+                        m["content"] = "\n".join([str(item) for item in m["content"]])
+            # ------------------------------
+
             mistral_body = json.dumps(mistral_req).encode('utf-8')
             
             print(f"[Mistral Proxy] Handling {'Anthropic' if is_anthropic else 'OpenAI'} request (Target Model: {DEFAULT_TARGET_MODEL})")
@@ -290,6 +303,12 @@ class MistralProxyHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(500)
             self.end_headers()
             self.wfile.write(str(e).encode())
+
+    def handle_one_request(self):
+        try:
+            super().handle_one_request()
+        except ConnectionResetError:
+            pass
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True

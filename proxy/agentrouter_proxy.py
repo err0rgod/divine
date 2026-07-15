@@ -10,7 +10,7 @@ DEFAULT_TARGET_MODEL = "claude-opus-4-8"
 
 def load_keys():
     try:
-        with open("D:/divine/config/dashboard_config.json", "r") as f:
+        with open("D:/divine/config/proxy_keys.json", "r") as f:
             data = json.load(f)
             return data.get("keys", {}).get("AgentRouter", [])
     except Exception:
@@ -98,6 +98,8 @@ def anthropic_to_openai_request(anthropic_data):
             ast_msg = {"role": "assistant"}
             if text_content:
                 ast_msg["content"] = text_content
+            else:
+                ast_msg["content"] = ""
             if tool_calls:
                 ast_msg["tool_calls"] = tool_calls
             req["messages"].append(ast_msg)
@@ -178,7 +180,7 @@ class AgentRouterProxyHandler(http.server.BaseHTTPRequestHandler):
             req_json = json.loads(body.decode('utf-8'))
             original_model = req_json.get("model", "claude-3-5-sonnet-20241022")
             
-            is_anthropic = self.path.endswith("/v1/messages")
+            is_anthropic = self.path.split("?")[0].endswith("/v1/messages")
             is_stream = req_json.get("stream", False)
             
             if is_anthropic:
@@ -189,6 +191,17 @@ class AgentRouterProxyHandler(http.server.BaseHTTPRequestHandler):
                 
             # Disable stream for target API to avoid json.loads crashing on SSE
             req_data["stream"] = False
+            
+            # --- ZHIPU/GLM SAFETY PATCH ---
+            if is_anthropic:
+                target_obj = req_data if "req_data" in locals() else target_req
+                for m in target_obj.get("messages", []):
+                    if m["role"] == "assistant" and "content" not in m:
+                        m["content"] = ""
+                    if isinstance(m.get("content"), list):
+                        m["content"] = "\n".join([str(item) for item in m["content"]])
+            # ------------------------------
+
             req_body = json.dumps(req_data).encode('utf-8')
             
             print(f"[AgentRouter Proxy] Handling {'Anthropic' if is_anthropic else 'OpenAI'} request (Target Model: {DEFAULT_TARGET_MODEL})")
@@ -292,12 +305,18 @@ class AgentRouterProxyHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(str(e).encode())
 
+    def handle_one_request(self):
+        try:
+            super().handle_one_request()
+        except ConnectionResetError:
+            pass
+
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
 
 if __name__ == "__main__":
     if not AGENTROUTER_API_KEYS:
-        print("[WARNING] No AgentRouter API keys found in config/dashboard_config.json!")
+        print("[WARNING] No AgentRouter API keys found in config/proxy_keys.json!")
     with ThreadedHTTPServer(("", PORT), AgentRouterProxyHandler) as httpd:
         print(f"AgentRouter Translation Proxy running at http://localhost:{PORT}/v1/messages")
         print(f"Targeting Model: {DEFAULT_TARGET_MODEL}")

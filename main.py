@@ -7,10 +7,61 @@ from rich.panel import Panel
 from rich.text import Text
 from rich import print as rprint
 import questionary
+import json
+import os
+from dotenv import load_dotenv
 
 console = Console()
 
 processes = []
+
+def sync_env_to_keys():
+    # Load environment variables from .env
+    load_dotenv('D:/divine/.env')
+    
+    # Map .env keys to the JSON provider names
+    env_map = {
+        "MISTRAL_API_KEY": "Mistral",
+        "GROQ_API_KEY": "Groq",
+        "CEREBRAS_API_KEY": "Cerebras",
+        "NVIDIA_NIM_API_KEY": "NVIDIA",
+        "BAZAARLINK_API_KEY": "Bazaarlink",
+        "COHERE_API_KEY": "Cohere",
+        "BLUESMIND_API_KEY": "Bluesmind",
+        "AGENTROUTER_API_KEY": "AgentRouter",
+        "FORGEAI_API_KEY": "ForgeAI",
+        "DEEPSEEK_API_KEY": "DeepSeek"
+    }
+    
+    config_path = "D:/divine/config/proxy_keys.json"
+    
+    try:
+        with open(config_path, "r") as f:
+            data = json.load(f)
+    except Exception:
+        data = {"keys": {}}
+        
+    updated = False
+    if "keys" not in data:
+        data["keys"] = {}
+        
+    for env_key, provider_name in env_map.items():
+        val = os.environ.get(env_key)
+        if val and val.strip():
+            # Only sync if the provider array is missing or doesn't have this key
+            provider_keys = data["keys"].get(provider_name, [])
+            if val.strip() not in provider_keys:
+                # If they only had the default/empty string, wipe it and add the new one
+                if len(provider_keys) == 1 and provider_keys[0].startswith("sk-") == False and provider_keys[0] == "":
+                    data["keys"][provider_name] = [val.strip()]
+                else:
+                    data["keys"][provider_name] = [val.strip()] + [k for k in provider_keys if k != val.strip()]
+                updated = True
+                
+    if updated:
+        with open(config_path, "w") as f:
+            json.dump(data, f, indent=4)
+        # console.print("[dim]✓ Automatically synced new API keys from .env to proxy_keys.json[/dim]")
 
 def run_service(name, cmd_list, color):
     def target():
@@ -57,12 +108,18 @@ def start_services(start_web=True, start_proxy=True):
             pass
             
         console.print(f"[green]►[/] Starting {active_proxy} Proxy on http://127.0.0.1:8000")
-        if active_proxy == "AgentRouter":
-            run_service("PROXY", ["python", "proxy/agentrouter_proxy.py"], "yellow")
-        elif active_proxy == "ForgeAI":
-            run_service("PROXY", ["python", "proxy/forge_ai_proxy.py"], "yellow")
-        else:
-            run_service("PROXY", ["python", "proxy/mistral_proxy.py"], "yellow")
+        proxy_map = {
+            "AgentRouter": "agentrouter_proxy.py",
+            "ForgeAI": "forge_ai_proxy.py",
+            "Mistral": "mistral_proxy.py",
+            "Groq": "groq_proxy.py",
+            "NVIDIA": "nvidia_proxy.py",
+            "Bluesmind": "bluesmind_proxy.py",
+            "Cerebras": "cerebras_proxy.py",
+            "DeepSeek": "deepseek_proxy.py"
+        }
+        script = proxy_map.get(active_proxy, "mistral_proxy.py")
+        run_service("PROXY", ["python", f"proxy/{script}"], "yellow")
         
     console.print("\n[dim]Services are running in the background. Press Ctrl+C to stop and exit.[/dim]\n")
     try:
@@ -75,6 +132,7 @@ def start_services(start_web=True, start_proxy=True):
         sys.exit(0)
 
 def main():
+    sync_env_to_keys()
     show_header()
     
     choice = questionary.select(
@@ -150,19 +208,24 @@ def main():
         except Exception:
             models_data = {}
             
-        model_choices = []
-        for provider, models in models_data.items():
-            if provider in ["Mistral", "AgentRouter", "ForgeAI", "Groq", "OpenRouter"]:
-                for m in models:
-                    model_choices.append(f"{provider}: {m}")
-                    
-        if not model_choices:
-            model_choices = ["Mistral: codestral-latest", "AgentRouter: claude-opus-4-8", "AgentRouter: gpt-5.5", "ForgeAI: gpt-5.6-luna", "ForgeAI: glm-5.2"]
-            
-        selected = questionary.select("Select the target model for the proxy to use:", choices=model_choices).ask()
+        provider_choices = list(models_data.keys())
+        provider_choices = [p for p in provider_choices if p not in ["Auto-Select", "Exa", "Firecrawl", "Jina"]]
         
-        if selected:
-            provider, target_model = selected.split(": ", 1)
+        if not provider_choices:
+            provider_choices = ["Mistral", "AgentRouter", "ForgeAI", "Groq", "NVIDIA", "Bluesmind", "Cerebras", "DeepSeek"]
+            
+        provider = questionary.select("Select the Provider for the proxy to use:", choices=provider_choices).ask()
+        if not provider:
+            main()
+            return
+            
+        models_for_provider = models_data.get(provider, [])
+        if not models_for_provider:
+            models_for_provider = ["default-model"]
+            
+        target_model = questionary.select(f"Select the Model for {provider}:", choices=models_for_provider).ask()
+        
+        if provider and target_model:
             proxy_config = {}
             try:
                 with open("D:/divine/config/proxy_config.json", "r") as f:
@@ -172,7 +235,7 @@ def main():
                 
             proxy_config["target_model"] = target_model
             # Automatically update the active proxy if the model belongs to a standalone provider
-            if provider in ["Mistral", "AgentRouter", "ForgeAI"]:
+            if provider in ["Mistral", "AgentRouter", "ForgeAI", "Groq", "NVIDIA", "Bluesmind", "Cerebras", "DeepSeek"]:
                 proxy_config["active"] = provider
                 
             with open("D:/divine/config/proxy_config.json", "w") as f:

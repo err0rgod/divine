@@ -22,7 +22,7 @@ import json
 import sys
 import time
 
-API_KEY = os.environ.get("BAZAARLINK_API_API_KEY")
+API_KEY = os.environ.get("BAZAARLINK_API_KEY")
 BASE_URL = "https://bazaarlink.ai/api/v1"
 
 # The user explicitly noted to use 'auto:free' in working.txt, but specific models also work.
@@ -77,7 +77,7 @@ def main():
     global MODEL
     import json
     try:
-        with open('../models.json' if os.path.exists('../models.json') else 'models.json', 'r') as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config', 'models.json'), 'r', encoding='utf-8') as f:
             db = json.load(f)
             avail = db.get("Bazaarlink", [])
             if avail:
