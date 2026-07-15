@@ -40,9 +40,7 @@ def test_default_base_url_constant():
 
 
 def test_init_uses_default_base_url_and_api_key(vercel_config):
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = profiled_provider(
             "vercel",
             vercel_config,

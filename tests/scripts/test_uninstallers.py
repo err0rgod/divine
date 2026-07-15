@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-Divine_COMMANDS = (
+DIVINE_COMMANDS = (
     "divine-server",
     "divine-claude",
     "divine-codex",
@@ -63,7 +63,7 @@ class PosixUninstallHarness:
         return self.log.read_text(encoding="utf-8").splitlines()
 
     def remove_entry_points(self) -> None:
-        for name in Divine_COMMANDS:
+        for name in DIVINE_COMMANDS:
             (self.tool_bin / name).unlink(missing_ok=True)
 
 
@@ -80,7 +80,7 @@ def posix_uninstall_harness(tmp_path: Path) -> PosixUninstallHarness:
     for path in (bin_dir, tool_bin, divine_home):
         path.mkdir(parents=True)
     (divine_home / "config.json").write_text("{}", encoding="utf-8")
-    for name in Divine_COMMANDS:
+    for name in DIVINE_COMMANDS:
         _write_executable(tool_bin / name, "#!/bin/sh\nexit 0\n")
 
     _write_executable(bin_dir / "claude", "#!/bin/sh\nexit 0\n")
@@ -151,7 +151,8 @@ def test_uninstall_sh_removes_and_verifies_only_fcc(
     assert "Divine Gateway has been removed and verified." in result.stdout
     assert not posix_uninstall_harness.divine_home.exists()
     assert all(
-        not (posix_uninstall_harness.tool_bin / name).exists() for name in Divine_COMMANDS
+        not (posix_uninstall_harness.tool_bin / name).exists()
+        for name in DIVINE_COMMANDS
     )
     assert (posix_uninstall_harness.bin_dir / "uv").exists()
     assert (posix_uninstall_harness.bin_dir / "claude").exists()
@@ -208,7 +209,8 @@ def test_uninstall_sh_reports_purge_failure_after_verified_tool_removal(
     assert result.returncode != 0
     assert posix_uninstall_harness.divine_home.exists()
     assert all(
-        not (posix_uninstall_harness.tool_bin / name).exists() for name in Divine_COMMANDS
+        not (posix_uninstall_harness.tool_bin / name).exists()
+        for name in DIVINE_COMMANDS
     )
     assert "Divine Gateway has been removed and verified." not in result.stdout
 
@@ -221,7 +223,7 @@ def test_uninstall_sh_dry_run_is_non_mutating(
     assert result.returncode == 0, result.stderr
     assert posix_uninstall_harness.divine_home.exists()
     assert all(
-        (posix_uninstall_harness.tool_bin / name).exists() for name in Divine_COMMANDS
+        (posix_uninstall_harness.tool_bin / name).exists() for name in DIVINE_COMMANDS
     )
     assert posix_uninstall_harness.calls() == []
     assert "Dry run complete. No changes were made." in result.stdout
@@ -283,7 +285,7 @@ class PowerShellUninstallHarness:
         return self.log.read_text(encoding="utf-8").splitlines()
 
     def remove_entry_points(self) -> None:
-        for name in Divine_COMMANDS:
+        for name in DIVINE_COMMANDS:
             (self.tool_bin / f"{name}.cmd").unlink(missing_ok=True)
 
 
@@ -307,14 +309,14 @@ def powershell_uninstall_harness(
     for path in (bin_dir, tool_bin, divine_home):
         path.mkdir(parents=True)
     (divine_home / "config.json").write_text("{}", encoding="utf-8")
-    for name in Divine_COMMANDS:
+    for name in DIVINE_COMMANDS:
         (tool_bin / f"{name}.cmd").write_text(
             "@echo off\nexit /b 0\n", encoding="utf-8"
         )
     for name in ("claude", "codex", "pi"):
         (bin_dir / f"{name}.cmd").write_text("@echo off\nexit /b 0\n", encoding="utf-8")
 
-    uv_commands = " ".join(Divine_COMMANDS)
+    uv_commands = " ".join(DIVINE_COMMANDS)
     (bin_dir / "uv.cmd").write_text(
         rf"""@echo off
 echo uv:%*>>"%CALL_LOG%"
@@ -353,7 +355,7 @@ function Remove-Item {
     }
     Microsoft.PowerShell.Management\Remove-Item @PSBoundParameters
 }
-$installer = [scriptblock]::Create([IO.File]::ReadAllText($env:Divine_UNINSTALLER))
+$installer = [scriptblock]::Create([IO.File]::ReadAllText($env:DIVINE_UNINSTALLER))
 if ($env:UNINSTALL_DRY_RUN -eq "1") {
     & $installer -DryRun
 }
@@ -376,7 +378,7 @@ else {
             "USERPROFILE": str(home),
             "CALL_LOG": str(log),
             "FAKE_TOOL_BIN": str(tool_bin),
-            "Divine_UNINSTALLER": str(_repo_root() / "scripts" / "uninstall.ps1"),
+            "DIVINE_UNINSTALLER": str(_repo_root() / "scripts" / "uninstall.ps1"),
             "FAIL_STEP": "",
             "UNINSTALL_DRY_RUN": "0",
         }
@@ -396,7 +398,7 @@ def test_uninstall_ps1_removes_and_verifies_only_fcc(
     assert not powershell_uninstall_harness.divine_home.exists()
     assert all(
         not (powershell_uninstall_harness.tool_bin / f"{name}.cmd").exists()
-        for name in Divine_COMMANDS
+        for name in DIVINE_COMMANDS
     )
     assert (powershell_uninstall_harness.bin_dir / "uv.cmd").exists()
     assert (powershell_uninstall_harness.bin_dir / "claude.cmd").exists()
@@ -456,7 +458,7 @@ def test_uninstall_ps1_reports_purge_failure_after_verified_tool_removal(
     assert powershell_uninstall_harness.divine_home.exists()
     assert all(
         not (powershell_uninstall_harness.tool_bin / f"{name}.cmd").exists()
-        for name in Divine_COMMANDS
+        for name in DIVINE_COMMANDS
     )
     assert "Divine Gateway has been removed and verified." not in result.stdout
 
@@ -470,7 +472,7 @@ def test_uninstall_ps1_dry_run_is_non_mutating(
     assert powershell_uninstall_harness.divine_home.exists()
     assert all(
         (powershell_uninstall_harness.tool_bin / f"{name}.cmd").exists()
-        for name in Divine_COMMANDS
+        for name in DIVINE_COMMANDS
     )
     assert powershell_uninstall_harness.calls() == []
     assert "Dry run complete. No changes were made." in result.stdout
@@ -485,7 +487,7 @@ def test_uninstallers_guard_running_commands_and_preserve_shared_owners() -> Non
     assert "pgrep" in shell
     assert "Get-Process" in powershell
     for text in (shell, powershell):
-        for command in Divine_COMMANDS:
+        for command in DIVINE_COMMANDS:
             assert command in text
         assert "npm uninstall" not in text
         assert "uv self uninstall" not in text

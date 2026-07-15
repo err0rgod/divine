@@ -24,9 +24,7 @@ class TestCreateMessagingComponents:
                 "divine.messaging.platforms.factory.MessagingRateLimiter",
                 return_value=limiter,
             ) as limiter_cls,
-            patch(
-                "divine.messaging.platforms.telegram.TELEGRAM_AVAILABLE", True
-            ),
+            patch("divine.messaging.platforms.telegram.TELEGRAM_AVAILABLE", True),
             patch(
                 "divine.messaging.platforms.telegram.TelegramRuntime",
                 return_value=mock_runtime,
@@ -91,9 +89,7 @@ class TestCreateMessagingComponents:
                 "divine.messaging.platforms.factory.MessagingRateLimiter",
                 return_value=limiter,
             ) as limiter_cls,
-            patch(
-                "divine.messaging.platforms.discord.DISCORD_AVAILABLE", True
-            ),
+            patch("divine.messaging.platforms.discord.DISCORD_AVAILABLE", True),
             patch(
                 "divine.messaging.platforms.discord.DiscordRuntime",
                 return_value=mock_runtime,
@@ -167,9 +163,7 @@ class TestCreateMessagingComponents:
                 "divine.messaging.platforms.telegram.TelegramRuntime",
                 return_value=runtime,
             ) as runtime_cls,
-            patch(
-                "divine.messaging.platforms.telegram.TELEGRAM_AVAILABLE", True
-            ),
+            patch("divine.messaging.platforms.telegram.TELEGRAM_AVAILABLE", True),
         ):
             first = create_messaging_components(
                 "telegram",

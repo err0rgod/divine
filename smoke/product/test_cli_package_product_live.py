@@ -8,7 +8,11 @@ import pytest
 from divine.cli.managed.manager import ManagedClaudeSessionManager
 from divine.cli.managed.session import ManagedClaudeSession
 from divine.core.version import package_version
-from smoke.lib.child_process import cmd_divine_init, cmd_divine_version, run_captured_text
+from smoke.lib.child_process import (
+    cmd_divine_init,
+    cmd_divine_version,
+    run_captured_text,
+)
 from smoke.lib.config import SmokeConfig
 
 pytestmark = [pytest.mark.live, pytest.mark.smoke_target("cli")]
@@ -106,9 +110,7 @@ async def test_cli_session_stop_kills_child_e2e(tmp_path: Path) -> None:
     process.wait = AsyncMock(side_effect=[asyncio.TimeoutError, 0])
     session.process = process
 
-    with patch(
-        "divine.cli.managed.session.kill_pid_tree_best_effort"
-    ) as kill_tree:
+    with patch("divine.cli.managed.session.kill_pid_tree_best_effort") as kill_tree:
         stopped = await session.stop()
 
     assert stopped is True

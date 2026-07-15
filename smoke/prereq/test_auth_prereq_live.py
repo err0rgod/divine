@@ -20,7 +20,7 @@ def test_bearer_auth_is_the_only_supported_header_shape(
         smoke_config,
         env_overrides={
             "ANTHROPIC_AUTH_TOKEN": token,
-            "Divine_ENV_FILE": str(env_file),
+            "DIVINE_ENV_FILE": str(env_file),
             "MESSAGING_PLATFORM": "none",
         },
         name="auth",

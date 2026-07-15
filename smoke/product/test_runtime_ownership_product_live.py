@@ -238,7 +238,7 @@ def test_provider_hot_swap_preserves_inflight_stream_e2e(
                 | {
                     "ANTHROPIC_AUTH_TOKEN",
                     "ENABLE_MODEL_THINKING",
-                    "Divine_ENV_FILE",
+                    "DIVINE_ENV_FILE",
                     "LM_STUDIO_BASE_URL",
                     "MODEL",
                     "MODEL_FABLE",

@@ -34,9 +34,7 @@ def groq_provider(groq_config):
 
 def test_init(groq_config):
     """Test provider initialization."""
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = profiled_provider(
             "groq", groq_config, rate_limiter=passthrough_rate_limiter()
         )

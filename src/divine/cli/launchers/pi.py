@@ -12,8 +12,8 @@ from divine.config.settings import get_settings
 
 from .common import preflight_proxy, resolve_client_binary, run_client_process
 
-_API_KEY_ENV = "Divine_PI_API_KEY"
-_BASE_URL_ENV = "Divine_PI_BASE_URL"
+_API_KEY_ENV = "DIVINE_PI_API_KEY"
+_BASE_URL_ENV = "DIVINE_PI_BASE_URL"
 _BINARY_NAME = "pi"
 _DISPLAY_NAME = "Pi"
 _HELP_TIMEOUT_SECONDS = 5.0
@@ -115,7 +115,9 @@ def build_pi_launcher_env(
     """Return a Pi environment containing only Divine-owned proxy variables."""
 
     env = {
-        key: value for key, value in base_env.items() if not key.startswith("Divine_PI_")
+        key: value
+        for key, value in base_env.items()
+        if not key.startswith("DIVINE_PI_")
     }
     env[_BASE_URL_ENV] = proxy_root_url.rstrip("/")
     env[_API_KEY_ENV] = proxy_auth_token(auth_token)

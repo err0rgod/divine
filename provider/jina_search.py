@@ -1,5 +1,7 @@
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
 """
@@ -14,23 +16,20 @@ CURRENT STATUS:
 - Authentication: The API key works perfectly!
 """
 
-import requests
-import json
 import urllib.parse
-import sys
+
+import requests
 
 API_KEY = os.environ.get("JINA_SEARCH_API_KEY")
 
-HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
-    "Accept": "application/json"
-}
+HEADERS = {"Authorization": f"Bearer {API_KEY}", "Accept": "application/json"}
+
 
 def search(query):
     """Perform a web search using Jina."""
     # Jina passes the query directly in the URL
     encoded_query = urllib.parse.quote(query)
-    
+
     try:
         response = requests.get(
             f"https://s.jina.ai/{encoded_query}",
@@ -47,6 +46,7 @@ def search(query):
         print(f"Request failed: {e}")
         return None
 
+
 def main():
     """Interactive search loop for Jina AI."""
     print("=" * 60)
@@ -59,7 +59,7 @@ def main():
     while True:
         try:
             query = input("\033[36mSearch Jina > \033[0m").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError, KeyboardInterrupt:
             print("\nBye!")
             break
 
@@ -70,11 +70,11 @@ def main():
 
         print("\033[90mSearching...\033[0m")
         results = search(query)
-        
+
         if not results:
             print("\033[31mNo results found.\033[0m\n")
             continue
-            
+
         print("\n\033[32m--- Search Results ---\033[0m")
         for i, res in enumerate(results[:5], 1):
             title = res.get("title", "No Title")
@@ -85,6 +85,7 @@ def main():
             if desc:
                 print(f"   \033[90m{desc[:100]}...\033[0m")
         print()
+
 
 if __name__ == "__main__":
     main()

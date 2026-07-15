@@ -1,73 +1,83 @@
-from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any, Tuple
-import sys
 import os
 import shutil
-import asyncio
+import sys
+from typing import Any
+
+from fastapi import FastAPI, File, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from engine.orchestrator import engine
 import engine.agent_tools as agent_tools
+from engine.orchestrator import engine
 
 app = FastAPI()
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
 
 class ChatRequest(BaseModel):
     chat_id: str
     provider: str
     model: str
     prompt: str
-    history: List[dict]
-    files: Optional[List[str]] = []
-    loop: Optional[bool] = False
+    history: list[dict]
+    files: list[str] | None = []
+    loop: bool | None = False
+
 
 # Global log store for real-time Agent Loop UI updates
-agent_logs: Dict[str, List[str]] = {}
+agent_logs: dict[str, list[str]] = {}
 
 import json
 
-def load_verified_models() -> Dict[str, List[str]]:
+
+def load_verified_models() -> dict[str, list[str]]:
     """Dynamically parses config/models.json to ensure only verified, online models are selectable."""
     try:
-        with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
+        with open("D:/divine/config/models.json", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         print(f"Error loading config/models.json: {e}")
         # Ultimate fallback
         providers_map = {
             "Auto-Select": ["Divine (Meta-Router)"],
-            "Mistral": ["codestral-latest", "mistral-large-latest"]
+            "Mistral": ["codestral-latest", "mistral-large-latest"],
         }
         return providers_map
 
+
 # Load dynamically on startup
 UI_PROVIDERS = load_verified_models()
+
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request) -> HTMLResponse:
     # Reload models on page refresh so it's always up to date if models.txt changes
     latest_providers = load_verified_models()
-    return templates.TemplateResponse("index.html", {"request": request, "providers": latest_providers})
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "providers": latest_providers}
+    )
+
 
 @app.get("/api/providers")
 async def get_providers() -> JSONResponse:
     return JSONResponse(content=load_verified_models())
 
+
 @app.get("/api/dashboard/routing")
 async def get_routing() -> JSONResponse:
     try:
         from engine.orchestrator import load_routing_pools
+
         return JSONResponse(content=load_routing_pools())
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+
 @app.post("/api/dashboard/routing")
-async def update_routing(req: Request) -> Dict[str, Any]:
+async def update_routing(req: Request) -> dict[str, Any]:
     routing_data = await req.json()
     try:
         with open("D:/divine/config/routing.json", "w", encoding="utf-8") as f:
@@ -76,16 +86,18 @@ async def update_routing(req: Request) -> Dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 @app.get("/api/dashboard/proxy")
 async def get_proxy_config() -> JSONResponse:
     try:
-        with open("D:/divine/config/proxy_config.json", "r", encoding="utf-8") as f:
+        with open("D:/divine/config/proxy_config.json", encoding="utf-8") as f:
             return JSONResponse(content=json.load(f))
     except Exception:
         return JSONResponse(content={"aliases": {}, "keys": {}})
 
+
 @app.post("/api/dashboard/proxy")
-async def update_proxy_config(req: Request) -> Dict[str, Any]:
+async def update_proxy_config(req: Request) -> dict[str, Any]:
     proxy_data = await req.json()
     try:
         with open("D:/divine/config/proxy_config.json", "w", encoding="utf-8") as f:
@@ -94,24 +106,27 @@ async def update_proxy_config(req: Request) -> Dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 @app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:
+async def upload_file(file: UploadFile = File(...)) -> dict[str, Any]:
     uploads_dir = agent_tools.UPLOADS_DIR
     filepath = os.path.join(uploads_dir, file.filename)
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return {"success": True, "filename": file.filename, "filepath": filepath}
 
+
 @app.get("/api/logs/{chat_id}")
-async def get_logs(chat_id: str) -> Dict[str, List[str]]:
+async def get_logs(chat_id: str) -> dict[str, list[str]]:
     if chat_id in agent_logs:
         logs = agent_logs[chat_id]
-        agent_logs[chat_id] = [] # Clear fetched logs
+        agent_logs[chat_id] = []  # Clear fetched logs
         return {"logs": logs}
     return {"logs": []}
 
+
 @app.post("/api/chat")
-async def process_chat(req: ChatRequest) -> Dict[str, Any]:
+async def process_chat(req: ChatRequest) -> dict[str, Any]:
     chat_id = req.chat_id
     if chat_id not in agent_logs:
         agent_logs[chat_id] = []
@@ -121,18 +136,24 @@ async def process_chat(req: ChatRequest) -> Dict[str, Any]:
     sys_prompt = "You are Divine, an advanced AI Agent."
     if memory_context:
         sys_prompt += f"\n\nHere is your long-term persistent memory:\n{memory_context}"
-        
+
     # Inject File Contents
     file_context = ""
     for filepath in req.files:
         if os.path.exists(filepath):
-            agent_logs[chat_id].append(f"> Parsing attached file: {os.path.basename(filepath)}...")
-            content = agent_tools.extract_file_content(filepath, is_multimodal_model=False)
-            file_context += f"\n\n[Attached File: {os.path.basename(filepath)}]\n{content}\n"
-    
+            agent_logs[chat_id].append(
+                f"> Parsing attached file: {os.path.basename(filepath)}..."
+            )
+            content = agent_tools.extract_file_content(
+                filepath, is_multimodal_model=False
+            )
+            file_context += (
+                f"\n\n[Attached File: {os.path.basename(filepath)}]\n{content}\n"
+            )
+
     if file_context:
         sys_prompt += f"\n\nContext Files provided by user:\n{file_context}"
-        
+
     sys_prompt += """
     
 SUPERPOWERS (Tools):
@@ -150,10 +171,10 @@ To use a tool, strictly output its XML tag in your response:
 
     # Clean up history to ensure only 'role' and 'content' are sent to the API
     messages = [{"role": msg["role"], "content": msg["content"]} for msg in req.history]
-    
+
     # Prepend System Prompt
     messages.insert(0, {"role": "system", "content": sys_prompt})
-    
+
     messages.append({"role": "user", "content": req.prompt})
 
     provider = req.provider
@@ -174,35 +195,37 @@ To use a tool, strictly output its XML tag in your response:
     while loop_count < max_loops:
         loop_count += 1
         agent_logs[chat_id].append(f"> Generating response (Iteration {loop_count})...")
-        
-        response = engine.chat(provider_name=provider, model_name=model, messages=messages)
-        
+
+        response = engine.chat(
+            provider_name=provider, model_name=model, messages=messages
+        )
+
         if not response["success"]:
             return {"success": False, "error": response["error"]}
-            
+
         reply_content = response["content"]
         if response.get("usage", {}).get("total_tokens"):
             usage_total["total_tokens"] += response["usage"]["total_tokens"]
         if response.get("failover_occurred"):
             failover_occurred = True
             original_provider = response.get("original_provider")
-            
+
         messages.append({"role": "assistant", "content": reply_content})
-        
+
         # Parse and execute tools
         tool_results = agent_tools.parse_and_execute_tags(reply_content)
-        
+
         if tool_results:
             agent_logs[chat_id].append("> Tool execution detected...")
             observation_text = "Tool Execution Results:\n"
             for k, v in tool_results.items():
                 agent_logs[chat_id].append(f"  - {k}")
                 observation_text += f"[{k}]\n{v}\n\n"
-            
+
             if req.loop:
                 messages.append({"role": "user", "content": observation_text})
                 agent_logs[chat_id].append("> Re-evaluating based on tool results...")
-                continue # Loop again
+                continue  # Loop again
             else:
                 final_reply = reply_content + "\n\n" + observation_text
                 break
@@ -218,10 +241,13 @@ To use a tool, strictly output its XML tag in your response:
         "auto_selected": auto_selected,
         "failover_occurred": failover_occurred,
         "original_provider": original_provider,
-        "usage": usage_total
+        "usage": usage_total,
     }
 
-CONTEXT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "context")
+
+CONTEXT_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "context"
+)
 CHATS_DIR = os.path.join(CONTEXT_DIR, "chats")
 os.makedirs(CHATS_DIR, exist_ok=True)
 
@@ -229,16 +255,19 @@ os.makedirs(CHATS_DIR, exist_ok=True)
 legacy_file = os.path.join(CONTEXT_DIR, "chats.json")
 if os.path.exists(legacy_file):
     try:
-        with open(legacy_file, "r", encoding="utf-8") as f:
+        with open(legacy_file, encoding="utf-8") as f:
             legacy_chats = json.load(f)
         for chat in legacy_chats:
             chat_id = chat.get("id")
             if chat_id:
-                with open(os.path.join(CHATS_DIR, f"{chat_id}.json"), "w", encoding="utf-8") as f2:
+                with open(
+                    os.path.join(CHATS_DIR, f"{chat_id}.json"), "w", encoding="utf-8"
+                ) as f2:
                     json.dump(chat, f2, indent=4)
         os.remove(legacy_file)
     except Exception as e:
         print(f"Migration error: {e}")
+
 
 @app.get("/api/history")
 async def get_history() -> JSONResponse:
@@ -246,14 +275,17 @@ async def get_history() -> JSONResponse:
     try:
         for filename in os.listdir(CHATS_DIR):
             if filename.endswith(".json"):
-                with open(os.path.join(CHATS_DIR, filename), "r", encoding="utf-8") as f:
+                with open(
+                    os.path.join(CHATS_DIR, filename), encoding="utf-8"
+                ) as f:
                     chats.append(json.load(f))
     except Exception as e:
         print(f"Error loading chats: {e}")
     return JSONResponse(content=chats)
 
+
 @app.post("/api/history/{chat_id}")
-async def save_history(chat_id: str, req: Request) -> Dict[str, Any]:
+async def save_history(chat_id: str, req: Request) -> dict[str, Any]:
     try:
         chat_data = await req.json()
         filepath = os.path.join(CHATS_DIR, f"{chat_id}.json")
@@ -264,8 +296,9 @@ async def save_history(chat_id: str, req: Request) -> Dict[str, Any]:
         print(f"Error saving chat {chat_id}: {e}")
         return {"success": False, "error": str(e)}
 
+
 @app.delete("/api/history/{chat_id}")
-async def delete_history(chat_id: str) -> Dict[str, Any]:
+async def delete_history(chat_id: str) -> dict[str, Any]:
     try:
         filepath = os.path.join(CHATS_DIR, f"{chat_id}.json")
         if os.path.exists(filepath):
@@ -275,38 +308,44 @@ async def delete_history(chat_id: str) -> Dict[str, Any]:
         print(f"Error deleting chat {chat_id}: {e}")
         return {"success": False, "error": str(e)}
 
+
 from engine.state_manager import state_manager
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
+
 @app.get("/api/dashboard/stats")
 async def get_dashboard_stats() -> JSONResponse:
     return JSONResponse(content=state_manager.get_stats())
+
 
 @app.get("/api/dashboard/keys")
 async def get_dashboard_keys() -> JSONResponse:
     return JSONResponse(content=state_manager.get_keys())
 
+
 @app.post("/api/dashboard/keys")
-async def update_dashboard_keys(req: Request) -> Dict[str, Any]:
+async def update_dashboard_keys(req: Request) -> dict[str, Any]:
     keys_dict = await req.json()
     state_manager.update_keys(keys_dict)
     return {"success": True}
 
+
 @app.post("/api/dashboard/keys/test")
-async def test_dashboard_keys(req: Request) -> Dict[str, Any]:
+async def test_dashboard_keys(req: Request) -> dict[str, Any]:
     data = await req.json()
     provider = data.get("provider")
-    test_key = data.get("key") # Get the specific key to test
-    
+    test_key = data.get("key")  # Get the specific key to test
+
     if not test_key:
         return {"success": False, "error": "No key provided to test"}
 
     # Just run a quick deterministic chat through the orchestrator to test this key
     messages = [{"role": "user", "content": "Reply with 'OK' and nothing else."}]
-    
+
     try:
         fallback_models = {
             "Groq": "llama-3.1-8b-instant",
@@ -322,38 +361,50 @@ async def test_dashboard_keys(req: Request) -> Dict[str, Any]:
             "OpenAI": "gpt-4o",
             "Anthropic": "claude-3-5-sonnet-20240620",
             "OpenRouter": "openrouter/free",
-            "Bedrock": "anthropic.claude-3-sonnet-20240229-v1:0"
+            "Bedrock": "anthropic.claude-3-sonnet-20240229-v1:0",
         }
-        
+
         test_model = fallback_models.get(provider, "test-model")
-        
+
         # Test it directly without failover and using the explicit test_key
-        response = engine.chat(provider_name=provider, model_name=test_model, messages=messages, max_tokens=10, auto_failover=False, test_key=test_key)
-        return {"success": response.get("success", False), "error": response.get("error", "Unknown Error")}
+        response = engine.chat(
+            provider_name=provider,
+            model_name=test_model,
+            messages=messages,
+            max_tokens=10,
+            auto_failover=False,
+            test_key=test_key,
+        )
+        return {
+            "success": response.get("success", False),
+            "error": response.get("error", "Unknown Error"),
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
 
 @app.get("/api/dashboard/models")
 async def get_dashboard_models() -> JSONResponse:
     try:
-        with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
+        with open("D:/divine/config/models.json", encoding="utf-8") as f:
             return JSONResponse(content=json.load(f))
     except Exception:
         return JSONResponse(content={})
 
+
 @app.post("/api/dashboard/models")
-async def update_dashboard_models(req: Request) -> Dict[str, Any]:
+async def update_dashboard_models(req: Request) -> dict[str, Any]:
     models_dict = await req.json()
     try:
         # Load existing models.json to merge instead of overwrite
         existing = {}
         if os.path.exists("D:/divine/config/models.json"):
-            with open("D:/divine/config/models.json", "r", encoding="utf-8") as f:
+            with open("D:/divine/config/models.json", encoding="utf-8") as f:
                 try:
                     existing = json.load(f)
                 except Exception:
                     pass
-        
+
         # Merge new configurations with existing (keeps Auto-Select, etc.)
         for k, v in models_dict.items():
             existing[k] = v
@@ -364,6 +415,8 @@ async def update_dashboard_models(req: Request) -> Dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)

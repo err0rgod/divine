@@ -366,9 +366,7 @@ class TestSessionStoreTreeSnapshots:
             encoding="utf-8",
         )
 
-        with patch(
-            "divine.messaging.trees.snapshot.logger.warning"
-        ) as warning:
+        with patch("divine.messaging.trees.snapshot.logger.warning") as warning:
             store = SessionStore(storage_path=str(path))
 
         assert store.load_conversation_snapshot().is_empty

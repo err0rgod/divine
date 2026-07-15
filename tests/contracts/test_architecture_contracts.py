@@ -30,9 +30,7 @@ def test_architecture_document_relative_links_resolve() -> None:
 def test_root_env_example_is_the_single_template_source() -> None:
     repo_root = Path(__file__).resolve().parents[2]
     root_example = repo_root / ".env.example"
-    duplicate_example = (
-        repo_root / "src" / "divine" / "config" / "env.example"
-    )
+    duplicate_example = repo_root / "src" / "divine" / "config" / "env.example"
 
     assert root_example.is_file()
     assert not duplicate_example.exists()

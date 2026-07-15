@@ -448,8 +448,7 @@ def test_install_sh_voice_flags_only_change_divine_spec(
     assert result.returncode == 0, result.stderr
     assert any(
         "--torch-backend cu130 divine[voice,voice_local] @ "
-        "https://github.com/err0rgod/divine/archive/refs/heads/main.zip"
-        in call
+        "https://github.com/err0rgod/divine/archive/refs/heads/main.zip" in call
         for call in posix_harness.calls()
     )
 
@@ -605,10 +604,10 @@ def powershell_harness(
     (fixtures / "uv-command.cmd").write_text(_batch_uv("0.11.28"), encoding="utf-8")
     (fixtures / "fcc-command.cmd").write_text(
         """@echo off
-for %%I in ("%~f0") do set "Divine_NAME=%%~nI"
-echo %Divine_NAME%:%*>>"%CALL_LOG%"
+for %%I in ("%~f0") do set "DIVINE_NAME=%%~nI"
+echo %DIVINE_NAME%:%*>>"%CALL_LOG%"
 if "%FAIL_STEP%"=="fcc-verify" exit /b 55
-if "%Divine_NAME%"=="divine-server" if "%1"=="--version" echo divine 3.5.18
+if "%DIVINE_NAME%"=="divine-server" if "%1"=="--version" echo divine 3.5.18
 exit /b 0
 """,
         encoding="utf-8",
@@ -684,7 +683,7 @@ function Invoke-RestMethod {
     }
     Copy-Item -LiteralPath $source -Destination $OutFile -Force
 }
-$installer = [scriptblock]::Create([IO.File]::ReadAllText($env:Divine_INSTALLER))
+$installer = [scriptblock]::Create([IO.File]::ReadAllText($env:DIVINE_INSTALLER))
 & $installer @args
 """,
         encoding="utf-8",
@@ -704,7 +703,7 @@ $installer = [scriptblock]::Create([IO.File]::ReadAllText($env:Divine_INSTALLER)
             "CALL_LOG": str(log),
             "FAKE_FIXTURES": str(fixtures),
             "FAKE_TOOL_BIN": str(tool_bin),
-            "Divine_INSTALLER": str(_repo_root() / "scripts" / "install.ps1"),
+            "DIVINE_INSTALLER": str(_repo_root() / "scripts" / "install.ps1"),
             "FAIL_STEP": "",
         }
     )
@@ -911,8 +910,7 @@ def test_install_ps1_voice_flags_only_change_divine_spec(
     assert result.returncode == 0, result.stderr
     assert any(
         '--torch-backend cu130 "divine[voice,voice_local] @ '
-        'https://github.com/err0rgod/divine/archive/refs/heads/main.zip"'
-        in call
+        'https://github.com/err0rgod/divine/archive/refs/heads/main.zip"' in call
         for call in powershell_harness.calls()
     )
 
@@ -927,10 +925,7 @@ def test_installers_use_native_clients_and_single_python_selection() -> None:
         assert "@earendil-works/pi-coding-agent" not in text
         assert "git+" not in text
         assert "git --version" not in text
-        assert (
-            "https://github.com/err0rgod/divine/archive/refs/heads/main.zip"
-            in text
-        )
+        assert "https://github.com/err0rgod/divine/archive/refs/heads/main.zip" in text
         assert "python install" not in text
         assert "--refresh-package" in text
         assert "tool update-shell" in text

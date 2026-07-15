@@ -760,14 +760,12 @@ def _has_upstream_unavailable_text(text: str) -> bool:
 def _request_count(log_delta: str) -> int:
     access_log_count = log_delta.count("POST /v1/messages")
     service_log_count = log_delta.count("API_REQUEST:")
-    structured_log_count = log_delta.count(
-        '"event": "divine.api.request.received"'
-    )
+    structured_log_count = log_delta.count('"event": "divine.api.request.received"')
     return max(access_log_count, service_log_count, structured_log_count)
 
 
 def _marker(scope: str, prefix: str) -> str:
-    return f"Divine_{scope}_{prefix}_{uuid.uuid4().hex[:8].upper()}"
+    return f"DIVINE_{scope}_{prefix}_{uuid.uuid4().hex[:8].upper()}"
 
 
 def _excerpt(value: str | None, *, max_chars: int = 2400) -> str:

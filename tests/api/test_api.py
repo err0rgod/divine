@@ -216,8 +216,7 @@ def test_create_message_pre_start_provider_error_returns_terminal_json(
     terminal_trace = next(
         call.kwargs
         for call in trace.call_args_list
-        if call.kwargs.get("event")
-        == "divine.api.response.terminal_execution_error"
+        if call.kwargs.get("event") == "divine.api.response.terminal_execution_error"
     )
     assert terminal_trace == {
         "stage": "egress",

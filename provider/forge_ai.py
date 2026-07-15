@@ -1,6 +1,8 @@
 import os
 import random
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
 """
@@ -16,9 +18,9 @@ CURRENT STATUS:
 - Available Models: gpt-5.6-luna, claude-sonnet-5, deepseek-v4-pro, grok-4.5, and more.
 """
 
-import requests
 import time
-import sys
+
+import requests
 
 # Support fetching multiple keys separated by commas for load-balancing
 KEYS_STRING = os.environ.get("FORGE_AI_API_KEYS", os.environ.get("FORGEAI_API_KEY", ""))
@@ -30,12 +32,13 @@ BASE_URL = "https://forge-gateway-api.fly.dev/v1"
 # Default Model
 MODEL = "gpt-5.5"
 
+
 def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
     """Send a message to Forge AI using round-robin/random API keys."""
     if not KEYS:
         print("Error: No Forge AI API key configured in .env")
         return None, conversation
-        
+
     if conversation is None:
         conversation = []
 
@@ -46,13 +49,13 @@ def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
         "max_tokens": max_tokens,
         "messages": conversation,
     }
-    
+
     # Pick a random key from the pool to avoid rate limits
     selected_key = random.choice(KEYS)
-    
+
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {selected_key}"
+        "Authorization": f"Bearer {selected_key}",
     }
 
     try:
@@ -72,8 +75,8 @@ def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
         data = response.json()
         reply = data["choices"][0]["message"]["content"]
         usage = data.get("usage", {})
-        
-        completion_tokens = usage.get('completion_tokens', 0)
+
+        completion_tokens = usage.get("completion_tokens", 0)
         tps = completion_tokens / elapsed if elapsed > 0 else 0
 
         conversation.append({"role": "assistant", "content": reply})
@@ -82,23 +85,34 @@ def chat(prompt, max_tokens=1024, conversation=None, model=MODEL):
         print(f"Request failed: {e}")
         return None, conversation
 
+
 def main():
     global MODEL
     import json
+
     try:
-        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config', 'models.json'), 'r', encoding='utf-8') as f:
+        with open(
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "config",
+                "models.json",
+            ),
+            encoding="utf-8",
+        ) as f:
             db = json.load(f)
             avail = db.get("ForgeAI", [])
             if avail:
                 print("\nAvailable Models for ForgeAI:")
                 for i, m in enumerate(avail):
                     print(f"  [{i}] {m}")
-                sel = input(f"\nSelect model number (or press Enter for default '{MODEL}'): ").strip()
+                sel = input(
+                    f"\nSelect model number (or press Enter for default '{MODEL}'): "
+                ).strip()
                 if sel.isdigit() and int(sel) < len(avail):
                     MODEL = avail[int(sel)]
                 elif sel:
                     MODEL = sel
-    except Exception as e:
+    except Exception:
         pass
 
     """Interactive chat loop for Forge AI."""
@@ -114,7 +128,7 @@ def main():
     while True:
         try:
             prompt = input("\033[36mYou > \033[0m").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError, KeyboardInterrupt:
             print("\nBye!")
             break
 
@@ -135,7 +149,10 @@ def main():
         reply, usage, tps, conversation = result
 
         print(f"\033[33m{MODEL} > \033[0m{reply}")
-        print(f"\033[90m[tokens: {usage.get('prompt_tokens', '?')} in / {usage.get('completion_tokens', '?')} out | SPEED: {tps:.2f} tokens/sec]\033[0m\n")
+        print(
+            f"\033[90m[tokens: {usage.get('prompt_tokens', '?')} in / {usage.get('completion_tokens', '?')} out | SPEED: {tps:.2f} tokens/sec]\033[0m\n"
+        )
+
 
 if __name__ == "__main__":
     main()

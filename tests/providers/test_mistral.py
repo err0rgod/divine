@@ -37,9 +37,7 @@ def mistral_provider(mistral_config):
 
 def test_init(mistral_config):
     """Test provider initialization."""
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = MistralProvider(
             mistral_config, rate_limiter=passthrough_rate_limiter()
         )
@@ -491,7 +489,7 @@ async def test_stream_response_retries_without_mistral_reasoning_on_rejection(
                         "type": "tool_use",
                         "id": "toolu_reasoning",
                         "name": "echo",
-                        "input": {"value": "Divine_TOOL"},
+                        "input": {"value": "DIVINE_TOOL"},
                     },
                 ],
             },
@@ -559,7 +557,7 @@ async def test_stream_response_reasoning_retry_preserves_visible_text_and_tools(
                         "type": "tool_use",
                         "id": "toolu_reasoning",
                         "name": "echo",
-                        "input": {"value": "Divine_TOOL"},
+                        "input": {"value": "DIVINE_TOOL"},
                     },
                 ],
             },

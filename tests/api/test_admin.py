@@ -34,14 +34,14 @@ def _clear_process_config(monkeypatch) -> None:
         "OLLAMA_API_KEY",
         "ANTHROPIC_AUTH_TOKEN",
         "TELEGRAM_PROXY_URL",
-        "Divine_ENV_FILE",
+        "DIVINE_ENV_FILE",
         "CLOUDFLARE_API_TOKEN",
         "CLOUDFLARE_ACCOUNT_ID",
         "GITHUB_MODELS_TOKEN",
         "SAMBANOVA_API_KEY",
         "HOST",
         "PORT",
-        "Divine_OPEN_BROWSER",
+        "DIVINE_OPEN_BROWSER",
         "VOICE_NOTE_ENABLED",
         "WHISPER_DEVICE",
         "LOG_FILE",
@@ -85,9 +85,7 @@ def test_admin_page_no_longer_renders_global_status_header(monkeypatch, tmp_path
 
 
 def test_admin_static_no_longer_fetches_global_status_header():
-    script = Path("src/divine/api/admin_static/admin.js").read_text(
-        encoding="utf-8"
-    )
+    script = Path("src/divine/api/admin_static/admin.js").read_text(encoding="utf-8")
 
     assert 'api("/admin/api/status")' not in script
     assert "updateHeader" not in script
@@ -97,9 +95,7 @@ def test_admin_static_no_longer_fetches_global_status_header():
 
 
 def test_admin_static_hides_managed_source_label():
-    script = Path("src/divine/api/admin_static/admin.js").read_text(
-        encoding="utf-8"
-    )
+    script = Path("src/divine/api/admin_static/admin.js").read_text(encoding="utf-8")
 
     assert 'managed_env: "",' in script
     assert "hasOwnProperty.call(labels, source)" in script
@@ -108,9 +104,7 @@ def test_admin_static_hides_managed_source_label():
 
 
 def test_admin_static_loads_searchable_model_options_and_maps_none_to_unset():
-    script = Path("src/divine/api/admin_static/admin.js").read_text(
-        encoding="utf-8"
-    )
+    script = Path("src/divine/api/admin_static/admin.js").read_text(encoding="utf-8")
 
     assert 'api("/admin/api/models" + (refresh ? "/refresh" : "")' in script
     assert 'field.type === "model" || field.type === "optional_model"' in script
@@ -147,7 +141,7 @@ def test_admin_config_masks_secrets_and_exposes_manifest(monkeypatch, tmp_path):
     assert "TELEGRAM_PROXY_URL" in keys
     assert "CEREBRAS_API_KEY" in keys
     assert "OLLAMA_API_KEY" in keys
-    assert "Divine_OPEN_BROWSER" in keys
+    assert "DIVINE_OPEN_BROWSER" in keys
     assert "ZAI_BASE_URL" not in keys
     assert "CLAUDE_WORKSPACE" not in keys
     assert "CLAUDE_CLI_BIN" not in keys
@@ -163,7 +157,7 @@ def test_admin_config_masks_secrets_and_exposes_manifest(monkeypatch, tmp_path):
     )
     assert telegram_proxy_field["secret"] is True
     open_browser_field = next(
-        field for field in body["fields"] if field["key"] == "Divine_OPEN_BROWSER"
+        field for field in body["fields"] if field["key"] == "DIVINE_OPEN_BROWSER"
     )
     assert open_browser_field["type"] == "boolean"
     assert open_browser_field["value"] == "true"
@@ -294,7 +288,7 @@ def test_admin_apply_persists_open_browser_for_next_launch(monkeypatch, tmp_path
 
     response = _local_client(app).post(
         "/admin/api/config/apply",
-        json={"values": {"Divine_OPEN_BROWSER": False}},
+        json={"values": {"DIVINE_OPEN_BROWSER": False}},
     )
 
     assert response.status_code == 200
@@ -308,7 +302,7 @@ def test_admin_apply_persists_open_browser_for_next_launch(monkeypatch, tmp_path
         "fields": [],
     }
     managed_env = tmp_path / ".fcc" / ".env"
-    assert "Divine_OPEN_BROWSER=false" in managed_env.read_text(encoding="utf-8")
+    assert "DIVINE_OPEN_BROWSER=false" in managed_env.read_text(encoding="utf-8")
 
 
 def test_admin_apply_masks_telegram_proxy_credentials(monkeypatch, tmp_path):
@@ -716,7 +710,7 @@ def test_admin_apply_preserves_hidden_diagnostics_and_smoke_values(
             [
                 "MODEL=nvidia_nim/old-model",
                 "LOG_RAW_API_PAYLOADS=true",
-                "Divine_SMOKE_MODEL_ZAI=zai/smoke-model",
+                "DIVINE_SMOKE_MODEL_ZAI=zai/smoke-model",
                 "",
             ]
         ),
@@ -735,7 +729,7 @@ def test_admin_apply_preserves_hidden_diagnostics_and_smoke_values(
     text = env_file.read_text("utf-8")
     assert "MODEL=open_router/test-model" in text
     assert "LOG_RAW_API_PAYLOADS=true" in text
-    assert "Divine_SMOKE_MODEL_ZAI=zai/smoke-model" in text
+    assert "DIVINE_SMOKE_MODEL_ZAI=zai/smoke-model" in text
 
 
 def test_admin_apply_omits_stale_zai_base_url(monkeypatch, tmp_path):

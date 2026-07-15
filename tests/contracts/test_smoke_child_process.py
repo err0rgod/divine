@@ -58,7 +58,7 @@ def test_start_server_disables_cli_admin_browser(monkeypatch, tmp_path: Path) ->
     env_obj = captured["env"]
     assert isinstance(env_obj, dict)
     env = {str(key): value for key, value in env_obj.items()}
-    assert env["Divine_OPEN_BROWSER"] == "0"
+    assert env["DIVINE_OPEN_BROWSER"] == "0"
     assert env["HOST"] == "127.0.0.1"
     assert env["PORT"] == "4567"
 
@@ -84,14 +84,14 @@ def test_run_captured_text_uses_utf8_replacement(monkeypatch, tmp_path: Path) ->
     result = run_captured_text(
         ("cmd", "arg"),
         cwd=tmp_path,
-        env={"Divine_TEST": "1"},
+        env={"DIVINE_TEST": "1"},
         timeout=1.0,
     )
 
     assert result.stdout == "ok"
     assert calls["command"] == ["cmd", "arg"]
     assert calls["cwd"] == tmp_path
-    assert calls["env"] == {"Divine_TEST": "1"}
+    assert calls["env"] == {"DIVINE_TEST": "1"}
     assert calls["capture_output"] is True
     assert calls["text"] is True
     assert calls["encoding"] == "utf-8"

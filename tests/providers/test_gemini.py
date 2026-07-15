@@ -44,9 +44,7 @@ def gemini_provider(gemini_config):
 
 def test_init(gemini_config):
     """Test provider initialization."""
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = GeminiProvider(
             gemini_config, rate_limiter=passthrough_rate_limiter()
         )

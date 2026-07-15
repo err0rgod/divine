@@ -178,9 +178,9 @@ class ProviderMatrixDriver:
             )
 
         models = self.config.provider_smoke_models()
-        if not models and os.getenv("Divine_ALLOW_NO_PROVIDER_SMOKE") != "1":
+        if not models and os.getenv("DIVINE_ALLOW_NO_PROVIDER_SMOKE") != "1":
             fail_missing_env(
-                "no configured provider smoke models; set Divine_ALLOW_NO_PROVIDER_SMOKE=1 "
+                "no configured provider smoke models; set DIVINE_ALLOW_NO_PROVIDER_SMOKE=1 "
                 "only for no-provider smoke collection"
             )
         return models
@@ -227,7 +227,7 @@ class ClientProtocolDriver:
                         {"type": "text", "text": "Hello."},
                     ],
                 },
-                {"role": "user", "content": "Reply with exactly Divine_SMOKE_CLIENT"},
+                {"role": "user", "content": "Reply with exactly DIVINE_SMOKE_CLIENT"},
             ],
             "thinking": {"type": "adaptive", "budget_tokens": 1024},
         }
@@ -246,7 +246,7 @@ class ClientProtocolDriver:
                             "type": "tool_use",
                             "id": "toolu_client_smoke",
                             "name": "echo_smoke",
-                            "input": {"value": "Divine_SMOKE_CLIENT"},
+                            "input": {"value": "DIVINE_SMOKE_CLIENT"},
                         }
                     ],
                 },
@@ -256,7 +256,7 @@ class ClientProtocolDriver:
                         {
                             "type": "tool_result",
                             "tool_use_id": "toolu_client_smoke",
-                            "content": "Divine_SMOKE_CLIENT",
+                            "content": "DIVINE_SMOKE_CLIENT",
                         }
                     ],
                 },

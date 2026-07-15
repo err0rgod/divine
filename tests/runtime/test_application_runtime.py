@@ -234,9 +234,7 @@ async def test_candidate_failure_never_commits_and_preserves_current(tmp_path) -
             "divine.runtime.application.prepare_admin_update",
             return_value=prepared,
         ),
-        patch(
-            "divine.runtime.application.commit_prepared_admin_update"
-        ) as commit,
+        patch("divine.runtime.application.commit_prepared_admin_update") as commit,
         pytest.raises(RuntimeError, match="candidate failed"),
     ):
         await runtime.apply_admin_config({"MODEL": "nvidia_nim/new"})

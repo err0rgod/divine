@@ -229,8 +229,7 @@ def test_legacy_first_party_import_detector_rejects_bare_owner_names() -> None:
     )
 
     assert _legacy_first_party_import_offenders([record], {"api", "core"}) == [
-        "divine/api/routes.py:7: "
-        "divine.api.routes -> core.anthropic"
+        "divine/api/routes.py:7: divine.api.routes -> core.anthropic"
     ]
 
 

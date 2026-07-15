@@ -68,9 +68,7 @@ async def test_create_message_logs_full_payload_when_opt_in():
 
 
 def test_stream_ledger_default_debug_has_no_serialized_json_content():
-    with patch(
-        "divine.core.anthropic.streaming.emitter.logger.debug"
-    ) as mock_debug:
+    with patch("divine.core.anthropic.streaming.emitter.logger.debug") as mock_debug:
         ledger = AnthropicStreamLedger("msg_x", "m", 1, log_raw_events=False)
         ledger.message_start()
 
@@ -78,9 +76,7 @@ def test_stream_ledger_default_debug_has_no_serialized_json_content():
 
 
 def test_stream_ledger_raw_logging_includes_event_body_when_enabled():
-    with patch(
-        "divine.core.anthropic.streaming.emitter.logger.debug"
-    ) as mock_debug:
+    with patch("divine.core.anthropic.streaming.emitter.logger.debug") as mock_debug:
         ledger = AnthropicStreamLedger("msg_x", "m", 1, log_raw_events=True)
         ledger.message_start()
 

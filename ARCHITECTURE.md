@@ -292,7 +292,7 @@ in [config/env_files.py](src/divine/config/env_files.py) and uses this order:
 
 1. repo-local `.env`;
 2. managed `~/.fcc/.env`;
-3. optional `Divine_ENV_FILE`, appended when present.
+3. optional `DIVINE_ENV_FILE`, appended when present.
 
 Later dotenv files override earlier dotenv files. Process environment variables
 also participate through Pydantic settings resolution. `ANTHROPIC_AUTH_TOKEN`
@@ -843,7 +843,7 @@ instead of stopping at its login gate.
   native `/model` picker lists Divine provider slugs. Catalog generation is
   fail-open: launch continues with a warning if the catalog cannot be prepared.
 - Catalog discovery and inference both authenticate with HTTP bearer authorization.
-- It stores the proxy auth token in `Divine_CODEX_API_KEY` for Codex's provider
+- It stores the proxy auth token in `DIVINE_CODEX_API_KEY` for Codex's provider
   `env_key` to read. This process-local variable is a client credential carrier,
   not a second Divine setting.
 
@@ -860,7 +860,7 @@ is its bundled Pi adapter:
   silently falls back to a different provider.
 - Catalog discovery and provider inference use HTTP bearer authorization. Pi's
   provider API-key field remains its process-local credential carrier.
-- Divine connection values live only in child-process `Divine_PI_*` variables. Native
+- Divine connection values live only in child-process `DIVINE_PI_*` variables. Native
   Pi credentials and persistent configuration remain untouched.
 - Pi package-management, configuration, help, and version commands pass through
   unchanged because they do not create an Divine-backed session.

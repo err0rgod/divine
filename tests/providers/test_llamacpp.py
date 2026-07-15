@@ -33,9 +33,7 @@ def provider() -> OpenAIChatProvider:
     ],
 )
 def test_init_normalizes_openai_base_url(configured: str, expected: str) -> None:
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as openai_client:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as openai_client:
         provider = profiled_provider(
             "llamacpp",
             ProviderConfig(api_key="llamacpp", base_url=configured),
@@ -54,9 +52,7 @@ def test_init_uses_openai_chat_client() -> None:
         http_write_timeout=15.0,
         http_connect_timeout=5.0,
     )
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as openai_client:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as openai_client:
         provider = profiled_provider(
             "llamacpp", config, rate_limiter=passthrough_rate_limiter()
         )

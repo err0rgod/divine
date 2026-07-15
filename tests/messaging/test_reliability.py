@@ -9,9 +9,7 @@ from divine.messaging.platforms.telegram import TelegramRuntime
 
 @pytest.fixture
 def telegram_platform():
-    with patch(
-        "divine.messaging.platforms.telegram.TELEGRAM_AVAILABLE", True
-    ):
+    with patch("divine.messaging.platforms.telegram.TELEGRAM_AVAILABLE", True):
         platform = TelegramRuntime(
             bot_token="test_token",
             allowed_user_id="12345",

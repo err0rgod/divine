@@ -82,9 +82,7 @@ def test_init_composes_account_scoped_openai_chat_base_url(
     cloudflare_config: ProviderConfig,
 ) -> None:
     with (
-        patch(
-            "divine.providers.openai_chat.provider.AsyncOpenAI"
-        ) as mock_openai,
+        patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai,
         patch("httpx.AsyncClient") as mock_httpx_client,
     ):
         provider = CloudflareProvider(

@@ -102,9 +102,7 @@ def _make_internal_server_error(message: str) -> openai.InternalServerError:
 @pytest.mark.asyncio
 async def test_init(provider_config):
     """Test provider initialization."""
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = NvidiaNimProvider(
             provider_config,
             nim_settings=NimSettings(),
@@ -127,9 +125,7 @@ async def test_init_uses_configurable_timeouts():
         http_write_timeout=15.0,
         http_connect_timeout=5.0,
     )
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         NvidiaNimProvider(
             config, nim_settings=NimSettings(), rate_limiter=passthrough_rate_limiter()
         )
@@ -213,7 +209,7 @@ def test_preflight_and_build_request_issue_206_post_tool_text(nim_provider):
                         type="tool_use",
                         id=tool_id,
                         name="echo_smoke",
-                        input={"value": "Divine_206"},
+                        input={"value": "DIVINE_206"},
                     ),
                     block(
                         type="text",
@@ -224,7 +220,9 @@ def test_preflight_and_build_request_issue_206_post_tool_text(nim_provider):
             message(
                 "user",
                 [
-                    block(type="tool_result", tool_use_id=tool_id, content="Divine_206"),
+                    block(
+                        type="tool_result", tool_use_id=tool_id, content="DIVINE_206"
+                    ),
                     block(type="text", text="What was echoed?"),
                 ],
             ),
@@ -826,7 +824,7 @@ async def test_stream_response_retries_without_reasoning_content(nim_provider):
                         type="tool_use",
                         id="toolu_reasoning",
                         name="echo_smoke",
-                        input={"value": "Divine_TOOL"},
+                        input={"value": "DIVINE_TOOL"},
                     ),
                 ],
             ),

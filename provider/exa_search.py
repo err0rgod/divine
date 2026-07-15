@@ -1,5 +1,7 @@
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
 """
@@ -15,24 +17,21 @@ CURRENT STATUS:
 - Authentication: The API key works perfectly!
 """
 
+
 import requests
-import json
-import sys
 
 API_KEY = os.environ.get("EXA_SEARCH_API_KEY")
 BASE_URL = "https://api.exa.ai"
 
-HEADERS = {
-    "Content-Type": "application/json",
-    "x-api-key": API_KEY
-}
+HEADERS = {"Content-Type": "application/json", "x-api-key": API_KEY}
+
 
 def search(query, num_results=5):
     """Perform a semantic search using Exa."""
     payload = {
         "query": query,
         "numResults": num_results,
-        "useAutoprompt": True # Exa will optimize the query automatically
+        "useAutoprompt": True,  # Exa will optimize the query automatically
     }
 
     try:
@@ -52,6 +51,7 @@ def search(query, num_results=5):
         print(f"Request failed: {e}")
         return None
 
+
 def main():
     """Interactive search loop for Exa."""
     print("=" * 60)
@@ -64,7 +64,7 @@ def main():
     while True:
         try:
             query = input("\033[36mSearch Exa > \033[0m").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError, KeyboardInterrupt:
             print("\nBye!")
             break
 
@@ -75,11 +75,11 @@ def main():
 
         print("\033[90mSearching...\033[0m")
         results = search(query)
-        
+
         if not results:
             print("\033[31mNo results found.\033[0m\n")
             continue
-            
+
         print("\n\033[32m--- Search Results ---\033[0m")
         for i, res in enumerate(results, 1):
             title = res.get("title", "No Title")
@@ -87,6 +87,7 @@ def main():
             print(f"\033[33m{i}. {title}\033[0m")
             print(f"   {url}")
         print()
+
 
 if __name__ == "__main__":
     main()

@@ -53,9 +53,7 @@ class TestTryPrefixDetection:
                 "divine.api.optimization_handlers.extract_command_prefix",
                 return_value="/ask",
             ),
-            patch(
-                "divine.api.optimization_handlers.logger.info"
-            ) as mock_log_info,
+            patch("divine.api.optimization_handlers.logger.info") as mock_log_info,
         ):
             result = try_prefix_detection(req, settings)
         assert result is not None

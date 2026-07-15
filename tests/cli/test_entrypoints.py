@@ -426,7 +426,7 @@ def test_config_env_key_migration_warns_for_explicit_env_file(
     explicit = tmp_path / "custom.env"
     explicit.write_text("HF_TOKEN=legacy-hf\n", encoding="utf-8")
 
-    with patch.dict(entrypoints.os.environ, {"Divine_ENV_FILE": str(explicit)}):
+    with patch.dict(entrypoints.os.environ, {"DIVINE_ENV_FILE": str(explicit)}):
         migrated = entrypoints._migrate_config_env_keys()
 
     assert migrated == ()
@@ -518,12 +518,8 @@ def test_launch_claude_passes_args_and_child_env(
     settings = _launcher_settings(port=9191, token="proxy-token")
 
     with (
-        patch(
-            "divine.cli.launchers.claude.get_settings", return_value=settings
-        ),
-        patch(
-            "divine.cli.launchers.claude.preflight_proxy", return_value=None
-        ),
+        patch("divine.cli.launchers.claude.get_settings", return_value=settings),
+        patch("divine.cli.launchers.claude.preflight_proxy", return_value=None),
         patch(
             "divine.cli.launchers.common.shutil.which",
             return_value="resolved-claude.cmd",
@@ -596,12 +592,8 @@ def test_launch_codex_passes_responses_config_and_child_env(
         )
 
     with (
-        patch(
-            "divine.cli.launchers.codex.get_settings", return_value=settings
-        ),
-        patch(
-            "divine.cli.launchers.codex.preflight_proxy", return_value=None
-        ),
+        patch("divine.cli.launchers.codex.get_settings", return_value=settings),
+        patch("divine.cli.launchers.codex.preflight_proxy", return_value=None),
         patch(
             "divine.cli.launchers.common.shutil.which",
             return_value="resolved-codex.cmd",
@@ -640,7 +632,7 @@ def test_launch_codex_passes_responses_config_and_child_env(
         "nvidia_nim/provider-model"
     ]
     child_env = popen.call_args.kwargs["env"]
-    assert child_env["Divine_CODEX_API_KEY"] == "proxy-token"
+    assert child_env["DIVINE_CODEX_API_KEY"] == "proxy-token"
     assert child_env["CODEX_HOME"] == "keep-home"
     assert "CODEX_INTERNAL_ORIGINATOR_OVERRIDE" not in child_env
     assert "CODEX_PERMISSION_PROFILE" not in child_env
@@ -661,12 +653,8 @@ def test_launch_codex_catalog_failure_warns_and_continues(
     settings = _launcher_settings(port=9191, token="proxy-token")
 
     with (
-        patch(
-            "divine.cli.launchers.codex.get_settings", return_value=settings
-        ),
-        patch(
-            "divine.cli.launchers.codex.preflight_proxy", return_value=None
-        ),
+        patch("divine.cli.launchers.codex.get_settings", return_value=settings),
+        patch("divine.cli.launchers.codex.preflight_proxy", return_value=None),
         patch(
             "divine.cli.launchers.common.shutil.which",
             return_value="resolved-codex.cmd",
@@ -675,9 +663,7 @@ def test_launch_codex_catalog_failure_warns_and_continues(
             "divine.cli.launchers.codex.codex_model_catalog_path",
             return_value=tmp_path / "codex-model-catalog.json",
         ),
-        patch(
-            "divine.cli.launchers.codex.urlopen", side_effect=URLError("boom")
-        ),
+        patch("divine.cli.launchers.codex.urlopen", side_effect=URLError("boom")),
         patch("divine.cli.launchers.common.subprocess.Popen") as popen,
         patch("divine.cli.launchers.common.register_pid"),
         patch("divine.cli.launchers.common.unregister_pid"),
@@ -711,8 +697,8 @@ def test_pi_launcher_builds_scoped_session_command_and_proxy_env(
         base_env={
             "PATH": "keep",
             "ANTHROPIC_API_KEY": "native-pi-credential",
-            "Divine_PI_API_KEY": "stale-key",
-            "Divine_PI_BASE_URL": "https://stale.invalid",
+            "DIVINE_PI_API_KEY": "stale-key",
+            "DIVINE_PI_BASE_URL": "https://stale.invalid",
         },
     )
 
@@ -732,8 +718,8 @@ def test_pi_launcher_builds_scoped_session_command_and_proxy_env(
     assert env == {
         "PATH": "keep",
         "ANTHROPIC_API_KEY": "native-pi-credential",
-        "Divine_PI_BASE_URL": "http://127.0.0.1:9191",
-        "Divine_PI_API_KEY": "proxy-token",
+        "DIVINE_PI_BASE_URL": "http://127.0.0.1:9191",
+        "DIVINE_PI_API_KEY": "proxy-token",
     }
 
 
@@ -746,7 +732,7 @@ def test_pi_launcher_uses_no_auth_sentinel_for_blank_token() -> None:
         base_env={},
     )
 
-    assert env["Divine_PI_API_KEY"] == "fcc-no-auth"
+    assert env["DIVINE_PI_API_KEY"] == "fcc-no-auth"
 
 
 def test_launch_pi_registers_bundled_extension_for_sessions(
@@ -756,7 +742,7 @@ def test_launch_pi_registers_bundled_extension_for_sessions(
     from divine.cli.launchers.pi import launch
 
     monkeypatch.setenv("KEEP_ME", "yes")
-    monkeypatch.setenv("Divine_PI_API_KEY", "stale-key")
+    monkeypatch.setenv("DIVINE_PI_API_KEY", "stale-key")
     extension = tmp_path / "pi_extension.ts"
     extension.write_text("export default () => {};", encoding="utf-8")
     settings = _launcher_settings(port=9191, token="proxy-token")
@@ -797,8 +783,8 @@ def test_launch_pi_registers_bundled_extension_for_sessions(
         "hello",
     ]
     child_env = popen.call_args.kwargs["env"]
-    assert child_env["Divine_PI_BASE_URL"] == "http://127.0.0.1:9191"
-    assert child_env["Divine_PI_API_KEY"] == "proxy-token"
+    assert child_env["DIVINE_PI_BASE_URL"] == "http://127.0.0.1:9191"
+    assert child_env["DIVINE_PI_API_KEY"] == "proxy-token"
     assert child_env["KEEP_ME"] == "yes"
 
 
@@ -943,21 +929,15 @@ def test_launch_claude_keyboard_interrupt_kills_child_tree() -> None:
     settings = _launcher_settings(port=9191, token="proxy-token")
 
     with (
-        patch(
-            "divine.cli.launchers.claude.get_settings", return_value=settings
-        ),
-        patch(
-            "divine.cli.launchers.claude.preflight_proxy", return_value=None
-        ),
+        patch("divine.cli.launchers.claude.get_settings", return_value=settings),
+        patch("divine.cli.launchers.claude.preflight_proxy", return_value=None),
         patch(
             "divine.cli.launchers.common.shutil.which",
             return_value="resolved-claude.cmd",
         ),
         patch("divine.cli.launchers.common.subprocess.Popen") as popen,
         patch("divine.cli.launchers.common.register_pid"),
-        patch(
-            "divine.cli.launchers.common.kill_pid_tree_best_effort"
-        ) as kill_tree,
+        patch("divine.cli.launchers.common.kill_pid_tree_best_effort") as kill_tree,
         patch("divine.cli.launchers.common.unregister_pid") as unregister_pid,
         pytest.raises(KeyboardInterrupt),
     ):
@@ -978,12 +958,8 @@ def test_launch_claude_exits_when_command_cannot_be_resolved(
 
     settings = _launcher_settings()
     with (
-        patch(
-            "divine.cli.launchers.claude.get_settings", return_value=settings
-        ),
-        patch(
-            "divine.cli.launchers.claude.preflight_proxy", return_value=None
-        ),
+        patch("divine.cli.launchers.claude.get_settings", return_value=settings),
+        patch("divine.cli.launchers.claude.preflight_proxy", return_value=None),
         patch("divine.cli.launchers.common.shutil.which", return_value=None),
         patch("divine.cli.launchers.common.subprocess.Popen") as popen,
         pytest.raises(SystemExit) as exc_info,
@@ -1004,9 +980,7 @@ def test_launch_claude_unreachable_proxy_exits_with_hint(
 
     settings = _launcher_settings(port=9393)
     with (
-        patch(
-            "divine.cli.launchers.claude.get_settings", return_value=settings
-        ),
+        patch("divine.cli.launchers.claude.get_settings", return_value=settings),
         patch(
             "divine.cli.launchers.claude.preflight_proxy",
             return_value="connection refused",

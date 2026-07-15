@@ -175,8 +175,7 @@ def test_create_response_pre_start_provider_error_returns_openai_error() -> None
     terminal_trace = next(
         call.kwargs
         for call in trace.call_args_list
-        if call.kwargs.get("event")
-        == "divine.api.response.terminal_execution_error"
+        if call.kwargs.get("event") == "divine.api.response.terminal_execution_error"
     )
     assert terminal_trace["wire_api"] == "responses"
     assert terminal_trace["request_id"] == request_id

@@ -44,9 +44,7 @@ async def test_stop_is_idempotent_without_a_live_process() -> None:
     session.process = process
 
     with (
-        patch(
-            "divine.cli.managed.session.kill_pid_tree_best_effort"
-        ) as kill_tree,
+        patch("divine.cli.managed.session.kill_pid_tree_best_effort") as kill_tree,
         patch("divine.cli.managed.session.unregister_pid") as unregister,
     ):
         assert await session.stop() is True

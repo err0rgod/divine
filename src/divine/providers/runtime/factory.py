@@ -59,7 +59,6 @@ def _create_deepseek(
     rate_limiter: ProviderRateLimiter,
 ) -> BaseProvider:
     from divine.providers.deepseek import DeepSeekProvider
-    from divine.providers.forge_ai import ForgeAIProvider
 
     return DeepSeekProvider(config, rate_limiter=rate_limiter)
 

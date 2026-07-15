@@ -7,9 +7,7 @@ from pathlib import Path
 def load_env_template() -> str:
     """Load the root ``.env.example`` template from wheel resources or checkout."""
 
-    packaged = importlib.resources.files("divine.config").joinpath(
-        "env.example"
-    )
+    packaged = importlib.resources.files("divine.config").joinpath("env.example")
     if packaged.is_file():
         return packaged.read_text("utf-8")
 

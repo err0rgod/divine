@@ -1,5 +1,7 @@
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
 """
@@ -17,10 +19,10 @@ CURRENT STATUS:
   - Note: Older models (like 'command-r-plus') have been fully removed and will return 404 errors. I've configured this script to use their latest Command A+ model.
 """
 
-import requests
 import json
-import sys
 import time
+
+import requests
 
 API_KEY = os.environ.get("COHERE_API_KEY")
 BASE_URL = "https://api.cohere.com/v2"
@@ -31,8 +33,9 @@ MODEL = "command-a-plus-05-2026"
 HEADERS = {
     "Accept": "application/json",
     "Content-Type": "application/json",
-    "Authorization": f"Bearer {API_KEY}"
+    "Authorization": f"Bearer {API_KEY}",
 }
+
 
 def chat(prompt, chat_history=None):
     """Send a message to Cohere."""
@@ -44,7 +47,7 @@ def chat(prompt, chat_history=None):
         "model": MODEL,
         "message": prompt,
         "chat_history": chat_history,
-        "temperature": 0.7
+        "temperature": 0.7,
     }
 
     try:
@@ -63,40 +66,50 @@ def chat(prompt, chat_history=None):
 
         data = response.json()
         reply = data.get("text", "")
-        
+
         # Extract usage stats if available
         meta = data.get("meta", {})
         usage = meta.get("tokens", {})
-        
-        completion_tokens = usage.get('output_tokens', 0)
+
+        completion_tokens = usage.get("output_tokens", 0)
         tps = completion_tokens / elapsed if elapsed > 0 else 0
-        
+
         # Append to history in Cohere format
         chat_history.append({"role": "USER", "message": prompt})
         chat_history.append({"role": "CHATBOT", "message": reply})
-        
+
         return reply, usage, tps, chat_history
     except Exception as e:
         print(f"Request failed: {e}")
         return None, chat_history
 
+
 def main():
     global MODEL
-    import json
+
     try:
-        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config', 'models.json'), 'r', encoding='utf-8') as f:
+        with open(
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "config",
+                "models.json",
+            ),
+            encoding="utf-8",
+        ) as f:
             db = json.load(f)
             avail = db.get("Cohere", [])
             if avail:
                 print("\nAvailable Models for Cohere:")
                 for i, m in enumerate(avail):
                     print(f"  [{i}] {m}")
-                sel = input(f"\nSelect model number (or press Enter for default '{MODEL}'): ").strip()
+                sel = input(
+                    f"\nSelect model number (or press Enter for default '{MODEL}'): "
+                ).strip()
                 if sel.isdigit() and int(sel) < len(avail):
                     MODEL = avail[int(sel)]
                 elif sel:
                     MODEL = sel
-    except Exception as e:
+    except Exception:
         pass
 
     """Interactive chat loop for Cohere API."""
@@ -112,7 +125,7 @@ def main():
     while True:
         try:
             prompt = input("\033[36mYou > \033[0m").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError, KeyboardInterrupt:
             print("\nBye!")
             break
 
@@ -133,13 +146,16 @@ def main():
         reply, usage, tps, chat_history = result
 
         print(f"\033[33m{MODEL} > \033[0m{reply}")
-        
+
         if usage:
-            p_tokens = usage.get('input_tokens', '?')
-            c_tokens = usage.get('output_tokens', '?')
-            print(f"\033[90m[tokens: {p_tokens} in / {c_tokens} out | SPEED: {tps:.2f} tokens/sec]\033[0m\n")
+            p_tokens = usage.get("input_tokens", "?")
+            c_tokens = usage.get("output_tokens", "?")
+            print(
+                f"\033[90m[tokens: {p_tokens} in / {c_tokens} out | SPEED: {tps:.2f} tokens/sec]\033[0m\n"
+            )
         else:
             print()
+
 
 if __name__ == "__main__":
     main()

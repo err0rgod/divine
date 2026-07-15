@@ -268,9 +268,7 @@ async def test_run_web_fetch_follows_redirect_when_each_hop_is_allowed():
     )
     res_ok = _aiohttp_response(200, url="http://8.8.8.8/final", body=b"hello world")
     client_cm, session = _aiohttp_client_session_patch(res_redirect, res_ok)
-    with patch(
-        "divine.api.web_tools.outbound.ClientSession", return_value=client_cm
-    ):
+    with patch("divine.api.web_tools.outbound.ClientSession", return_value=client_cm):
         out = await _run_web_fetch("http://8.8.8.8/start", _STRICT_EGRESS)
 
     assert out["data"] == "hello world"
@@ -283,9 +281,7 @@ async def test_run_web_fetch_truncates_large_body_to_byte_cap(monkeypatch):
     res_ok = _aiohttp_response(200, url="http://8.8.8.8/big", body=huge)
     client_cm, _ = _aiohttp_client_session_patch(res_ok)
     monkeypatch.setattr(web_tool_constants, "_MAX_WEB_FETCH_RESPONSE_BYTES", 100)
-    with patch(
-        "divine.api.web_tools.outbound.ClientSession", return_value=client_cm
-    ):
+    with patch("divine.api.web_tools.outbound.ClientSession", return_value=client_cm):
         out = await _run_web_fetch("http://8.8.8.8/big", _STRICT_EGRESS)
 
     assert len(out["data"]) <= 100
@@ -349,9 +345,7 @@ async def test_streams_web_search_server_tool_result(monkeypatch):
         assert query == "DeepSeek V4 model release 2026"
         return [{"title": "DeepSeek V4 Released", "url": "https://example.com/v4"}]
 
-    monkeypatch.setattr(
-        "divine.api.web_tools.outbound._run_web_search", fake_search
-    )
+    monkeypatch.setattr("divine.api.web_tools.outbound._run_web_search", fake_search)
     request = MessagesRequest(
         model="claude-haiku-4-5-20251001",
         max_tokens=100,
@@ -411,9 +405,7 @@ async def test_service_streams_forced_web_search_by_default(monkeypatch):
     async def fake_search(_query: str) -> list[dict[str, str]]:
         return [{"title": "DeepSeek V4 Released", "url": "https://example.com/v4"}]
 
-    monkeypatch.setattr(
-        "divine.api.web_tools.outbound._run_web_search", fake_search
-    )
+    monkeypatch.setattr("divine.api.web_tools.outbound._run_web_search", fake_search)
     settings = Settings.model_validate({"ENABLE_WEB_SERVER_TOOLS": True})
     provider_resolver = MagicMock()
     service = MessagesHandler(
@@ -445,9 +437,7 @@ async def test_service_aggregates_forced_web_search_when_stream_false(monkeypatc
     async def fake_search(_query: str) -> list[dict[str, str]]:
         return [{"title": "DeepSeek V4 Released", "url": "https://example.com/v4"}]
 
-    monkeypatch.setattr(
-        "divine.api.web_tools.outbound._run_web_search", fake_search
-    )
+    monkeypatch.setattr("divine.api.web_tools.outbound._run_web_search", fake_search)
     settings = Settings.model_validate({"ENABLE_WEB_SERVER_TOOLS": True})
     provider_resolver = MagicMock()
     service = MessagesHandler(
@@ -494,9 +484,7 @@ async def test_forced_web_fetch_ignores_stale_url_from_prior_user_turns(monkeypa
             "data": "x",
         }
 
-    monkeypatch.setattr(
-        "divine.api.web_tools.outbound._run_web_fetch", fake_fetch
-    )
+    monkeypatch.setattr("divine.api.web_tools.outbound._run_web_fetch", fake_fetch)
     request = MessagesRequest(
         model="claude-haiku-4-5-20251001",
         max_tokens=100,
@@ -536,9 +524,7 @@ async def test_service_aggregates_forced_web_fetch_when_stream_false(monkeypatch
             "data": "Article body",
         }
 
-    monkeypatch.setattr(
-        "divine.api.web_tools.outbound._run_web_fetch", fake_fetch
-    )
+    monkeypatch.setattr("divine.api.web_tools.outbound._run_web_fetch", fake_fetch)
     settings = Settings.model_validate({"ENABLE_WEB_SERVER_TOOLS": True})
     provider_resolver = MagicMock()
     service = MessagesHandler(
@@ -582,9 +568,7 @@ async def test_streams_web_fetch_server_tool_result(monkeypatch):
             "data": "Article body",
         }
 
-    monkeypatch.setattr(
-        "divine.api.web_tools.outbound._run_web_fetch", fake_fetch
-    )
+    monkeypatch.setattr("divine.api.web_tools.outbound._run_web_fetch", fake_fetch)
     request = MessagesRequest(
         model="claude-haiku-4-5-20251001",
         max_tokens=100,

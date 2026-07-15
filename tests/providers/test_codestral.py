@@ -34,9 +34,7 @@ def codestral_provider(codestral_config):
 
 def test_init(codestral_config):
     """Test provider initialization."""
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = profiled_provider(
             "mistral_codestral",
             codestral_config,

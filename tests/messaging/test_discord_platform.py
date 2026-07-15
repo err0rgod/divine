@@ -302,9 +302,7 @@ class TestDiscordRuntime:
             patch.object(
                 platform._client, "get_channel", MagicMock(return_value=mock_channel)
             ),
-            patch(
-                "divine.messaging.platforms.discord._get_discord"
-            ) as mock_get,
+            patch("divine.messaging.platforms.discord._get_discord") as mock_get,
         ):
             mock_discord = MagicMock()
             mock_get.return_value = mock_discord
@@ -346,9 +344,7 @@ class TestDiscordRuntime:
             patch.object(
                 platform._client, "get_channel", MagicMock(return_value=mock_channel)
             ),
-            patch(
-                "divine.messaging.platforms.discord._get_discord"
-            ) as mock_get,
+            patch("divine.messaging.platforms.discord._get_discord") as mock_get,
         ):
             mock_get.return_value = MagicMock()
             platform.outbound._get_discord = mock_get

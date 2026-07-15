@@ -19,7 +19,7 @@ from .common import (
     run_client_process,
 )
 
-_CODEX_AUTH_ENV_KEY = "Divine_CODEX_API_KEY"
+_CODEX_AUTH_ENV_KEY = "DIVINE_CODEX_API_KEY"
 _DISPLAY_NAME = "Codex CLI"
 _DEFAULT_BINARY = "codex"
 _INSTALL_HINT = "Install Codex with: npm install -g @openai/codex"

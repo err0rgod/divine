@@ -19,10 +19,10 @@ def repo_env_path() -> Path:
 
 
 def explicit_env_path(env: Mapping[str, str] | None = None) -> Path | None:
-    """Return the explicit Divine_ENV_FILE path, when configured."""
+    """Return the explicit DIVINE_ENV_FILE path, when configured."""
 
     source = env if env is not None else os.environ
-    if explicit := source.get("Divine_ENV_FILE"):
+    if explicit := source.get("DIVINE_ENV_FILE"):
         return Path(explicit)
     return None
 

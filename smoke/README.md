@@ -21,13 +21,13 @@ uv run pytest smoke --collect-only -q
 uv run pytest smoke -n 0 -s --tb=short
 ```
 
-The second command skips everything unless `Divine_LIVE_SMOKE=1` is set, but still
+The second command skips everything unless `DIVINE_LIVE_SMOKE=1` is set, but still
 writes skip entries to `.smoke-results/`.
 
 ## Product Smoke Run
 
 ```powershell
-$env:Divine_LIVE_SMOKE = "1"
+$env:DIVINE_LIVE_SMOKE = "1"
 uv run pytest smoke -n 0 -s --tb=short
 ```
 
@@ -35,17 +35,17 @@ Provider smoke scenarios can run providers in parallel while preserving
 sequential execution within each provider:
 
 ```powershell
-$env:Divine_LIVE_SMOKE = "1"
-$env:Divine_SMOKE_TARGETS = "providers"
+$env:DIVINE_LIVE_SMOKE = "1"
+$env:DIVINE_SMOKE_TARGETS = "providers"
 uv run pytest smoke -n auto --dist=loadgroup -s --tb=short
 ```
 
 Provider product E2E runs once per configured provider, independent of `MODEL`,
 `MODEL_FABLE`, `MODEL_OPUS`, `MODEL_SONNET`, and `MODEL_HAIKU`. Defaults come from the provider
-catalog/docs and can be overridden with `Divine_SMOKE_MODEL_<PROVIDER>`, for example
-`Divine_SMOKE_MODEL_DEEPSEEK=deepseek-v4-pro` (or `deepseek-v4-flash`). If no provider smoke model is
+catalog/docs and can be overridden with `DIVINE_SMOKE_MODEL_<PROVIDER>`, for example
+`DIVINE_SMOKE_MODEL_DEEPSEEK=deepseek-v4-pro` (or `deepseek-v4-flash`). If no provider smoke model is
 configured, live product smoke fails as `missing_env` unless you explicitly set
-`Divine_ALLOW_NO_PROVIDER_SMOKE=1`.
+`DIVINE_ALLOW_NO_PROVIDER_SMOKE=1`.
 
 ## Targets
 
@@ -60,7 +60,7 @@ Default targets do not send real bot messages or load voice backends:
 | `config` | env precedence, removed-env migration, proxy/timeouts | none |
 | `extensibility` | provider runtime and platform factory construction | none |
 | `messaging` | fake Discord/Telegram full flow, literal clear scopes, trees, persistence, voice cancel | none |
-| `providers` | multi-turn text, adaptive thinking history, tools, disconnect, errors | configured providers, optional `Divine_SMOKE_MODEL_*` |
+| `providers` | multi-turn text, adaptive thinking history, tools, disconnect, errors | configured providers, optional `DIVINE_SMOKE_MODEL_*` |
 | `tools` | forced tool_use and tool_result continuation | tool-capable configured provider |
 | `rate_limit` | disconnect cleanup and follow-up request | configured provider |
 | `lmstudio` | local `/models` plus OpenAI-chat-backed Messages through proxy | running LM Studio server |
@@ -75,85 +75,85 @@ Heavy/side-effectful targets are opt-in:
 | `openrouter_free_cli` | Claude Code CLI feature matrix across OpenRouter free models | `OPENROUTER_API_KEY`, Claude CLI |
 | `telegram` | getMe, send, edit, delete, optional manual inbound | token and chat/user ID |
 | `discord` | channel access, send, edit, delete, optional manual inbound | token and channel ID |
-| `voice` | generated WAV through local Whisper or NVIDIA NIM transcription | `VOICE_NOTE_ENABLED=true`, `Divine_SMOKE_RUN_VOICE=1` |
+| `voice` | generated WAV through local Whisper or NVIDIA NIM transcription | `VOICE_NOTE_ENABLED=true`, `DIVINE_SMOKE_RUN_VOICE=1` |
 
 ## Examples
 
 ```powershell
-$env:Divine_LIVE_SMOKE = "1"
-$env:Divine_SMOKE_PROVIDER_MATRIX = "open_router,nvidia_nim,deepseek,lmstudio,llamacpp,ollama"
+$env:DIVINE_LIVE_SMOKE = "1"
+$env:DIVINE_SMOKE_PROVIDER_MATRIX = "open_router,nvidia_nim,deepseek,lmstudio,llamacpp,ollama"
 uv run pytest smoke/product -n 0 -s --tb=short
 ```
 
 ```powershell
-$env:Divine_LIVE_SMOKE = "1"
-$env:Divine_SMOKE_TARGETS = "ollama"
+$env:DIVINE_LIVE_SMOKE = "1"
+$env:DIVINE_SMOKE_TARGETS = "ollama"
 $env:OLLAMA_BASE_URL = "http://localhost:11434"
 uv run pytest smoke/prereq smoke/product -n 0 -s --tb=short
 ```
 
 ```powershell
-$env:Divine_LIVE_SMOKE = "1"
-$env:Divine_SMOKE_TARGETS = "telegram,discord,voice"
-$env:Divine_SMOKE_RUN_VOICE = "1"
+$env:DIVINE_LIVE_SMOKE = "1"
+$env:DIVINE_SMOKE_TARGETS = "telegram,discord,voice"
+$env:DIVINE_SMOKE_RUN_VOICE = "1"
 uv run pytest smoke/product -n 0 -s --tb=short
 ```
 
 ```powershell
-$env:Divine_LIVE_SMOKE = "1"
-$env:Divine_SMOKE_TARGETS = "nvidia_nim_cli"
-$env:Divine_SMOKE_NIM_MODELS = "z-ai/glm-5.2,moonshotai/kimi-k2.6,minimaxai/minimax-m2.7,nvidia/nemotron-3-super-120b-a12b,deepseek-ai/deepseek-v4-pro,deepseek-ai/deepseek-v4-flash"
+$env:DIVINE_LIVE_SMOKE = "1"
+$env:DIVINE_SMOKE_TARGETS = "nvidia_nim_cli"
+$env:DIVINE_SMOKE_NIM_MODELS = "z-ai/glm-5.2,moonshotai/kimi-k2.6,minimaxai/minimax-m2.7,nvidia/nemotron-3-super-120b-a12b,deepseek-ai/deepseek-v4-pro,deepseek-ai/deepseek-v4-flash"
 uv run pytest smoke/product -n 0 -s --tb=short
 ```
 
 ```powershell
-$env:Divine_LIVE_SMOKE = "1"
-$env:Divine_SMOKE_TARGETS = "openrouter_free_cli"
-$env:Divine_SMOKE_OPENROUTER_FREE_MODELS = "nvidia/nemotron-3-super-120b-a12b:free,openai/gpt-oss-120b:free,poolside/laguna-m.1:free"
+$env:DIVINE_LIVE_SMOKE = "1"
+$env:DIVINE_SMOKE_TARGETS = "openrouter_free_cli"
+$env:DIVINE_SMOKE_OPENROUTER_FREE_MODELS = "nvidia/nemotron-3-super-120b-a12b:free,openai/gpt-oss-120b:free,poolside/laguna-m.1:free"
 uv run pytest smoke/product -n 0 -s --tb=short
 ```
 
 ```powershell
-$env:Divine_LIVE_SMOKE = "1"
-$env:Divine_SMOKE_TARGETS = "messaging,config,extensibility"
+$env:DIVINE_LIVE_SMOKE = "1"
+$env:DIVINE_SMOKE_TARGETS = "messaging,config,extensibility"
 uv run pytest smoke/product -n 0 -s --tb=short
 ```
 
 ## Environment
 
-- `Divine_ENV_FILE`: explicit dotenv path for startup/config scenarios.
-- `Divine_LIVE_SMOKE=1`: enables live smoke execution.
-- `Divine_ALLOW_NO_PROVIDER_SMOKE=1`: permits no-provider live smoke for harness work.
-- `Divine_SMOKE_TARGETS`: comma-separated targets, or `all`.
-- `Divine_SMOKE_PROVIDER_MATRIX`: comma-separated provider prefixes to require.
-- `Divine_SMOKE_MODEL_NVIDIA_NIM`, `Divine_SMOKE_MODEL_OPEN_ROUTER`,
-  `Divine_SMOKE_MODEL_MISTRAL`, `Divine_SMOKE_MODEL_MISTRAL_REASONING`,
-  `Divine_SMOKE_MODEL_MISTRAL_CODESTRAL`,
-  `Divine_SMOKE_MODEL_DEEPSEEK`, `Divine_SMOKE_MODEL_KIMI`,
-  `Divine_SMOKE_MODEL_WAFER`, `Divine_SMOKE_MODEL_MINIMAX`,
-  `Divine_SMOKE_MODEL_OPENCODE`, `Divine_SMOKE_MODEL_OPENCODE_GO`,
-  `Divine_SMOKE_MODEL_ZAI`, `Divine_SMOKE_MODEL_FIREWORKS`, `Divine_SMOKE_MODEL_CLOUDFLARE`,
-  `Divine_SMOKE_MODEL_GEMINI`, `Divine_SMOKE_MODEL_GROQ`, `Divine_SMOKE_MODEL_CEREBRAS`,
-  `Divine_SMOKE_MODEL_OLLAMA_CLOUD`, `Divine_SMOKE_MODEL_LMSTUDIO`,
-  `Divine_SMOKE_MODEL_LLAMACPP`, `Divine_SMOKE_MODEL_OLLAMA`: optional per-provider
+- `DIVINE_ENV_FILE`: explicit dotenv path for startup/config scenarios.
+- `DIVINE_LIVE_SMOKE=1`: enables live smoke execution.
+- `DIVINE_ALLOW_NO_PROVIDER_SMOKE=1`: permits no-provider live smoke for harness work.
+- `DIVINE_SMOKE_TARGETS`: comma-separated targets, or `all`.
+- `DIVINE_SMOKE_PROVIDER_MATRIX`: comma-separated provider prefixes to require.
+- `DIVINE_SMOKE_MODEL_NVIDIA_NIM`, `DIVINE_SMOKE_MODEL_OPEN_ROUTER`,
+  `DIVINE_SMOKE_MODEL_MISTRAL`, `DIVINE_SMOKE_MODEL_MISTRAL_REASONING`,
+  `DIVINE_SMOKE_MODEL_MISTRAL_CODESTRAL`,
+  `DIVINE_SMOKE_MODEL_DEEPSEEK`, `DIVINE_SMOKE_MODEL_KIMI`,
+  `DIVINE_SMOKE_MODEL_WAFER`, `DIVINE_SMOKE_MODEL_MINIMAX`,
+  `DIVINE_SMOKE_MODEL_OPENCODE`, `DIVINE_SMOKE_MODEL_OPENCODE_GO`,
+  `DIVINE_SMOKE_MODEL_ZAI`, `DIVINE_SMOKE_MODEL_FIREWORKS`, `DIVINE_SMOKE_MODEL_CLOUDFLARE`,
+  `DIVINE_SMOKE_MODEL_GEMINI`, `DIVINE_SMOKE_MODEL_GROQ`, `DIVINE_SMOKE_MODEL_CEREBRAS`,
+  `DIVINE_SMOKE_MODEL_OLLAMA_CLOUD`, `DIVINE_SMOKE_MODEL_LMSTUDIO`,
+  `DIVINE_SMOKE_MODEL_LLAMACPP`, `DIVINE_SMOKE_MODEL_OLLAMA`: optional per-provider
   smoke model overrides. Values may include the provider prefix or just the model
   name for that provider.
-- `Divine_SMOKE_MODEL_MISTRAL_REASONING`: optional override for the dedicated
+- `DIVINE_SMOKE_MODEL_MISTRAL_REASONING`: optional override for the dedicated
   Mistral native reasoning smoke, default `mistral/mistral-medium-3-5`.
-- `Divine_SMOKE_NIM_MODELS`: optional comma-separated NVIDIA NIM CLI matrix models
+- `DIVINE_SMOKE_NIM_MODELS`: optional comma-separated NVIDIA NIM CLI matrix models
   that replace the default characterization set.
-- `Divine_SMOKE_NIM_EXTRA_MODELS`: optional comma-separated NVIDIA NIM CLI matrix
+- `DIVINE_SMOKE_NIM_EXTRA_MODELS`: optional comma-separated NVIDIA NIM CLI matrix
   models appended to the default or replacement set.
-- `Divine_SMOKE_OPENROUTER_FREE_MODELS`: optional comma-separated OpenRouter free
+- `DIVINE_SMOKE_OPENROUTER_FREE_MODELS`: optional comma-separated OpenRouter free
   CLI matrix models that replace the default characterization set.
-- `Divine_SMOKE_OPENROUTER_FREE_EXTRA_MODELS`: optional comma-separated OpenRouter
+- `DIVINE_SMOKE_OPENROUTER_FREE_EXTRA_MODELS`: optional comma-separated OpenRouter
   free CLI matrix models appended to the default or replacement set.
-- `Divine_SMOKE_TIMEOUT_S`: per-request/subprocess timeout, default `45`.
-- `Divine_SMOKE_CLAUDE_BIN`: Claude CLI executable name, default `claude`.
-- `Divine_SMOKE_TELEGRAM_CHAT_ID`: Telegram chat/user ID for send/edit/delete.
-- `Divine_SMOKE_DISCORD_CHANNEL_ID`: Discord channel ID for send/edit/delete.
-- `Divine_SMOKE_INTERACTIVE=1`: enables manual inbound Telegram/Discord checks.
-- `Divine_SMOKE_RUN_VOICE=1`: allows voice transcription backends to load/run.
+- `DIVINE_SMOKE_TIMEOUT_S`: per-request/subprocess timeout, default `45`.
+- `DIVINE_SMOKE_CLAUDE_BIN`: Claude CLI executable name, default `claude`.
+- `DIVINE_SMOKE_TELEGRAM_CHAT_ID`: Telegram chat/user ID for send/edit/delete.
+- `DIVINE_SMOKE_DISCORD_CHANNEL_ID`: Discord channel ID for send/edit/delete.
+- `DIVINE_SMOKE_INTERACTIVE=1`: enables manual inbound Telegram/Discord checks.
+- `DIVINE_SMOKE_RUN_VOICE=1`: allows voice transcription backends to load/run.
 
 ## Windows / nested `uv run`
 
@@ -175,10 +175,10 @@ names contain `KEY`, `TOKEN`, `SECRET`, `WEBHOOK`, or `AUTH`.
 - `product_failure`: the app accepted the scenario but returned the wrong shape,
   crashed, leaked state, or violated the product contract.
 - `harness_bug`: the smoke test or driver made an invalid assumption.
-- `target_disabled`: skipped because `Divine_SMOKE_TARGETS` intentionally selected
+- `target_disabled`: skipped because `DIVINE_SMOKE_TARGETS` intentionally selected
   a different target.
 
 `product_failure` and `harness_bug` are failures. `missing_env`,
 `upstream_unavailable`, and `probe_timeout` are skips except when the user
-explicitly selected a provider in `Divine_SMOKE_PROVIDER_MATRIX`;
+explicitly selected a provider in `DIVINE_SMOKE_PROVIDER_MATRIX`;
 selected-but-missing providers fail.

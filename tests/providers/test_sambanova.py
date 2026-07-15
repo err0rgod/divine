@@ -38,9 +38,7 @@ def test_default_base_url_constant():
 
 
 def test_init_uses_default_base_url_and_api_key(sambanova_config):
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = profiled_provider(
             "sambanova", sambanova_config, rate_limiter=passthrough_rate_limiter()
         )

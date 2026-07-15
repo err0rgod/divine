@@ -75,9 +75,7 @@ def test_default_base_url_alias():
 
 
 def test_init(deepseek_config):
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_client:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_client:
         provider = DeepSeekProvider(
             deepseek_config, rate_limiter=passthrough_rate_limiter()
         )

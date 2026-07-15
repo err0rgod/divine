@@ -474,9 +474,7 @@ class TestManagedClaudeSession:
 
         session.process = mock_process
 
-        with patch(
-            "divine.cli.managed.session.kill_pid_tree_best_effort"
-        ) as kill_tree:
+        with patch("divine.cli.managed.session.kill_pid_tree_best_effort") as kill_tree:
             stopped = await session.stop()
 
         assert stopped is True
@@ -504,9 +502,7 @@ class TestManagedClaudeSession:
 
         session.process = mock_process
 
-        with patch(
-            "divine.cli.managed.session.kill_pid_tree_best_effort"
-        ) as kill_tree:
+        with patch("divine.cli.managed.session.kill_pid_tree_best_effort") as kill_tree:
             stopped = await session.stop()
 
         assert stopped is True

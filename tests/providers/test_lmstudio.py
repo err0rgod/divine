@@ -34,9 +34,7 @@ def lmstudio_provider(lmstudio_config):
 
 def test_init(lmstudio_config):
     """Test provider initialization."""
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = LMStudioProvider(
             lmstudio_config, rate_limiter=passthrough_rate_limiter()
         )

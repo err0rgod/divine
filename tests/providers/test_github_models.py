@@ -73,9 +73,7 @@ def test_default_base_url_constant() -> None:
 def test_init_uses_default_base_url_api_key_and_github_headers(
     github_models_config: ProviderConfig,
 ) -> None:
-    with patch(
-        "divine.providers.openai_chat.provider.AsyncOpenAI"
-    ) as mock_openai:
+    with patch("divine.providers.openai_chat.provider.AsyncOpenAI") as mock_openai:
         provider = GitHubModelsProvider(
             github_models_config, rate_limiter=passthrough_rate_limiter()
         )
