@@ -10,15 +10,18 @@ import questionary
 
 console = Console()
 
-def run_service(name, cmd, color):
+processes = []
+
+def run_service(name, cmd_list, color):
     def target():
         process = subprocess.Popen(
-            cmd,
+            cmd_list,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            shell=True
+            shell=False
         )
+        processes.append(process)
         for line in process.stdout:
             console.print(f"[{color}][{name}][/] {line.strip()}")
             
@@ -42,7 +45,7 @@ def start_services(start_web=True, start_proxy=True):
     show_header()
     if start_web:
         console.print("[green]►[/] Starting Web Dashboard on http://127.0.0.1:8000")
-        run_service("WEB", "uvicorn frontend.app:app --host 0.0.0.0 --port 8000", "cyan")
+        run_service("WEB", ["uvicorn", "frontend.app:app", "--host", "0.0.0.0", "--port", "8000"], "cyan")
         
     if start_proxy:
         import json
@@ -55,11 +58,11 @@ def start_services(start_web=True, start_proxy=True):
             
         console.print(f"[green]►[/] Starting {active_proxy} Proxy on http://127.0.0.1:8001")
         if active_proxy == "AgentRouter":
-            run_service("PROXY", "python proxy/agentrouter_proxy.py", "yellow")
+            run_service("PROXY", ["python", "proxy/agentrouter_proxy.py"], "yellow")
         elif active_proxy == "ForgeAI":
-            run_service("PROXY", "python proxy/forge_ai_proxy.py", "yellow")
+            run_service("PROXY", ["python", "proxy/forge_ai_proxy.py"], "yellow")
         else:
-            run_service("PROXY", "python proxy/mistral_proxy.py", "yellow")
+            run_service("PROXY", ["python", "proxy/mistral_proxy.py"], "yellow")
         
     console.print("\n[dim]Services are running in the background. Press Ctrl+C to stop and exit.[/dim]\n")
     try:
@@ -67,6 +70,8 @@ def start_services(start_web=True, start_proxy=True):
             time.sleep(1)
     except KeyboardInterrupt:
         console.print("\n[bold red]Shutting down services...[/bold red]")
+        for p in processes:
+            p.kill()
         sys.exit(0)
 
 def main():
