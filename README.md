@@ -1,83 +1,434 @@
-# Divine Gateway
+<div align="center">
 
-Divine is a lightweight, zero-dependency local proxy designed to intercept Anthropic API traffic (such as requests from Claude Code) and route it to alternative LLM providers. 
+# 🤖 Divine Gateway
 
-By translating the Anthropic Messages protocol into the standard OpenAI Chat Completions protocol, Divine allows you to use cheaper, local, or alternative models while preserving native features like Server-Sent Events (SSE) streaming and tool calling.
+Use Claude Code, Codex, Pi, or their IDE extensions through your own provider-backed proxy.
 
-## Design Philosophy
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-3776ab.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=for-the-badge)](https://github.com/astral-sh/uv)
+[![Tested with Pytest](https://img.shields.io/badge/testing-Pytest-00c0ff.svg?style=for-the-badge)](https://github.com/err0rgod/divine/actions/workflows/tests.yml)
+[![Type checking: Ty](https://img.shields.io/badge/type%20checking-ty-ffcc00.svg?style=for-the-badge)](https://pypi.org/project/ty/)
+[![Code style: Ruff](https://img.shields.io/badge/code%20formatting-ruff-f5a623.svg?style=for-the-badge)](https://github.com/astral-sh/ruff)
+[![Logging: Loguru](https://img.shields.io/badge/logging-loguru-4ecdc4.svg?style=for-the-badge)](https://github.com/Delgan/loguru)
 
-Unlike monolithic proxy solutions that require heavy web frameworks, Divine is built on a minimalist philosophy:
-- **Zero Heavy Dependencies:** Runs on standard Python libraries (`http.server`, `json`) and `requests`. No ASGI/WSGI servers, no complex ORMs, and no bloated routing frameworks.
-- **Micro-Script Architecture:** Each provider is isolated in its own dedicated proxy script (e.g., `mistral_proxy.py`). If one provider's API changes, it does not affect the rest of the gateway.
-- **Highly Hackable:** The codebase is designed to be easily read and modified by anyone familiar with basic Python HTTP handlers.
+Run your coding agents with free, paid, or local models. Choose and validate providers from one local Admin UI.
 
-## Features
+[Quick Start](#quick-start) · [Providers](#choose-a-provider) · [Clients](#connect-your-client) · [Integrations](#optional-integrations) · [Manage](#manage-your-installation)
 
-- **True Real-Time Streaming:** Implements a robust `requests.iter_lines()` streaming engine that safely handles chunked encoding and mid-stream provider disconnects, guaranteeing that the target client (e.g., Claude Code) receives the Anthropic `message_stop` signal properly without hanging.
-- **Protocol Translation:** Automatically translates Anthropic tool usage, system prompts, and thinking blocks into OpenAI-compatible formats, and reformats the responses back to Anthropic structures.
-- **Provider Support:** Natively includes proxy scripts for DeepSeek, Mistral, Cerebras, Groq, NVIDIA, Bluesmind, AgentRouter, and Forge AI.
-- **Automated Key Management:** Reads API credentials securely from a local `.env` file and synchronizes them to a strict `proxy_keys.json` configuration to prevent accidental leaks.
+</div>
 
-## Setup and Installation
+<div align="center">
+  <img src="assets/pic.png" alt="Divine Gateway in action" width="700">
+  <p><em>Claude Code running through the Divine Gateway proxy.</em></p>
+</div>
 
-### 1. Prerequisites
-Ensure you have Python 3.8+ installed. Install the minimal requirements:
+<div align="center">
+  <img src="assets/codex.png" alt="Codex CLI in action through Divine Gateway" width="700">
+  <p><em>Codex CLI using the local Divine Responses provider.</em></p>
+</div>
+
+<a id="model-picker"></a>
+
+<div align="center">
+  <img src="assets/cc-model-picker.png" alt="Claude Code model picker showing gateway models" width="700">
+  <p><em>Claude Code native <code>/model</code> picker with Divine gateway models.</em></p>
+</div>
+
+<div align="center">
+  <img src="assets/codex-model-picker.png" alt="Codex model picker showing generated Divine model catalog" width="700">
+  <p><em>Codex native <code>/model</code> picker with the generated Divine catalog.</em></p>
+</div>
+
+## Star History
+
+<div align="center">
+  <a href="https://star-history.com/#err0rgod/divine&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=err0rgod/divine&type=Date&theme=dark">
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=err0rgod/divine&type=Date">
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=err0rgod/divine&type=Date" width="700">
+    </picture>
+  </a>
+</div>
+
+## What You Get
+
+- Launch Claude Code with `divine-claude`, Codex with `divine-codex`, or Pi with `divine-pi`.
+- Switch among 25 cloud and local providers from the Admin UI.
+- Use each coding agent's native model picker.
+- Route Fable, Opus, Sonnet, Haiku, and fallback traffic to different models.
+- Keep streaming, tool use, reasoning, and image input across compatible models.
+- Connect Claude Code and Codex in VS Code or Claude Code through JetBrains ACP.
+- Optionally run Claude Code sessions through Discord or Telegram with voice-note transcription.
+- Protect the local proxy with optional token authentication.
+
+## Quick Start
+
+<a id="install"></a>
+
+### 1. Install Or Update
+
+macOS/Linux:
+
 ```bash
-pip install requests python-dotenv
+curl -fsSL "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.sh" | sh
 ```
 
-### 2. Configuration
-Create a `.env` file in the root directory and add your API keys:
-```env
-DEEPSEEK_API_KEY=your_key_here
-MISTRAL_API_KEY=your_key_here
-# Add other provider keys as needed
-```
+Windows PowerShell:
 
-When you run the main application, it will automatically parse the `.env` file and generate a `.gitignore`-protected `proxy_keys.json` file in the `config/` directory.
-
-### 3. Running the Proxy
-You can start a specific proxy directly from the `proxy/` directory. For example, to run the DeepSeek proxy (which defaults to port 8000):
-```bash
-python proxy/deepseek_proxy.py
-```
-
-### 4. Connecting a Client (Claude Code)
-To route Claude Code traffic through the Divine Gateway, set the Anthropic base URL environment variable to point to your running proxy port.
-
-**macOS/Linux:**
-```bash
-export ANTHROPIC_BASE_URL="http://localhost:8000"
-export ANTHROPIC_AUTH_TOKEN="local-proxy"
-claude
-```
-
-**Windows (PowerShell):**
 ```powershell
-$env:ANTHROPIC_BASE_URL="http://localhost:8000"
-$env:ANTHROPIC_AUTH_TOKEN="local-proxy"
-claude
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.ps1")))
 ```
 
-## Architecture
+Re-run the same command whenever you want to update. You can review the installers before running them: [install.sh](scripts/install.sh) and [install.ps1](scripts/install.ps1).
 
-The system operates via standard `http.server.BaseHTTPRequestHandler` instances. 
-1. The proxy listens for `POST` requests to `/v1/messages` (Anthropic's endpoint).
-2. It parses the incoming Anthropic JSON and runs it through a translation function (e.g., `anthropic_to_openai_request`).
-3. It opens a chunked streaming connection to the target provider.
-4. It intercepts the SSE stream, converting OpenAI `delta` events into Anthropic `content_block_delta` events, and flushes them to the client socket in real-time.
+### 2. Start The Server
 
-## Roadmap & V2 Architecture
+```bash
+divine-server
+```
 
-Divine v1.0 represents the stable, decoupled micro-script phase of the project. As the project evolves, the roadmap for V2 includes adapting advanced features while maintaining our lightweight, standard-library-first philosophy:
+To print the installed Divine Gateway version without starting the server,
+run `divine-server --version`.
 
-1. **Unified Master Proxy:** 
-   Consolidating the individual proxy scripts into a single, dynamic `divine_proxy.py` router. Instead of spinning up different ports for different providers, a single port will dynamically route traffic based on dashboard configuration, reducing port conflicts and unifying the translation logic.
-2. **Native Model Discovery:** 
-   Implementing a handler for the `/v1/models` endpoint to automatically inject available gateway models into Claude Code's native `/model` CLI dropdown, allowing seamless model switching without restarting the proxy.
-3. **Lightweight Messaging Bridge:** 
-   Developing a standard-library polling daemon to interface with Discord and Telegram APIs. This will allow headless execution of Claude Code sessions via mobile devices without introducing heavy ASGI webhooks.
+Keep this process running. By default, the Admin UI opens in your browser once
+the server is healthy. Its address is always shown in the startup log:
+
+```text
+INFO:     Admin UI: http://127.0.0.1:8082/admin (local-only)
+```
+
+Use the port shown in your terminal if it differs from `8082`.
+
+<a id="nvidia-nim-provider"></a>
+
+### 3. Configure NVIDIA NIM
+
+1. Create an API key at [build.nvidia.com/settings/api-keys](https://build.nvidia.com/settings/api-keys).
+2. Open the Admin UI URL from the server log.
+3. Paste the key into `NVIDIA_NIM_API_KEY`.
+4. Leave `MODEL` on the default `nvidia_nim/nvidia/nemotron-3-super-120b-a12b`, or search the model dropdown and select another model.
+5. Click **Validate**, then **Apply**.
+
+<div align="center">
+  <img src="assets/admin-page.png" alt="Local admin UI for proxy settings" width="700">
+</div>
+
+### 4. Run Your Coding Agent
+
+Claude Code:
+
+```bash
+divine-claude
+```
+
+Codex:
+
+```bash
+divine-codex
+```
+
+Pi:
+
+```bash
+divine-pi
+```
+
+All three launchers use the current Admin UI settings. Use the agent's model picker to choose from the models Divine exposes. Normal CLI arguments still work, for example:
+
+```bash
+divine-codex exec "hello"
+```
+
+`divine-pi` registers Divine only for that Pi process; your existing Pi settings, sessions, credentials, and extensions remain unchanged.
+
+## Choose A Provider
+
+Enter the listed setting in the Admin UI, open **Model Config**, then search the `MODEL` dropdown and select a model. Divine constructs each slug as `<provider-id>/<exact-provider-model-id>`; free-text entry remains available when a provider cannot list a model. Click **Validate** and **Apply**. Provider names link to their key, model, or setup pages.
+
+| Provider | Admin UI setting | Example `MODEL` |
+| --- | --- | --- |
+| [NVIDIA NIM](https://build.nvidia.com/settings/api-keys) | `NVIDIA_NIM_API_KEY` | `nvidia_nim/nvidia/nemotron-3-super-120b-a12b` |
+| [OpenRouter](https://openrouter.ai/keys) | `OPENROUTER_API_KEY` | `open_router/openrouter/free` |
+| [Google AI Studio (Gemini)](https://aistudio.google.com/apikey) | `GEMINI_API_KEY` | `gemini/models/gemini-3.1-flash-lite` |
+| [DeepSeek](https://platform.deepseek.com/api_keys) | `DEEPSEEK_API_KEY` | `deepseek/deepseek-chat` |
+| [Mistral La Plateforme](https://console.mistral.ai/) | `MISTRAL_API_KEY` | `mistral/devstral-small-latest` |
+| [Mistral Codestral](https://console.mistral.ai/) | `CODESTRAL_API_KEY` | `mistral_codestral/codestral-latest` |
+| [OpenCode Zen](https://opencode.ai/auth) | `OPENCODE_API_KEY` | `opencode/gpt-5.3-codex` |
+| [OpenCode Go](https://opencode.ai/auth) | `OPENCODE_API_KEY` | `opencode_go/minimax-m2.7` |
+| [Vercel AI Gateway](https://vercel.com/docs/ai-gateway/models-and-providers) | `AI_GATEWAY_API_KEY` | `vercel/openai/gpt-5.5` |
+| [Hugging Face Inference Providers](https://huggingface.co/settings/tokens) | `HUGGINGFACE_API_KEY` | `huggingface/Qwen/Qwen3-Coder-480B-A35B-Instruct:fastest` |
+| [Cohere](https://dashboard.cohere.com/api-keys) | `COHERE_API_KEY` | `cohere/command-a-plus-05-2026` |
+| [GitHub Models](https://github.com/marketplace?type=models) | `GITHUB_MODELS_TOKEN` | `github_models/openai/gpt-4.1` |
+| [Wafer](https://wafer.ai/) | `WAFER_API_KEY` | `wafer/DeepSeek-V4-Pro` |
+| [Kimi](https://platform.moonshot.ai/console/api-keys) | `KIMI_API_KEY` | `kimi/kimi-k2.5` |
+| [MiniMax](https://platform.minimax.io/user-center/basic-information/interface-key) | `MINIMAX_API_KEY` | `minimax/MiniMax-M3` |
+| [Cerebras Inference](https://cloud.cerebras.ai/) | `CEREBRAS_API_KEY` | `cerebras/gpt-oss-120b` |
+| [Groq](https://console.groq.com/keys) | `GROQ_API_KEY` | `groq/llama-3.3-70b-versatile` |
+| [SambaNova](https://cloud.sambanova.ai/apis) | `SAMBANOVA_API_KEY` | `sambanova/Meta-Llama-3.3-70B-Instruct` |
+| [Fireworks AI](https://fireworks.ai/account/api-keys) | `FIREWORKS_API_KEY` | `fireworks/accounts/fireworks/models/llama-v3p3-70b-instruct` |
+| [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) | `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` | `cloudflare/@cf/moonshotai/kimi-k2.6` |
+| [Z.ai](https://z.ai/manage-apikey/apikey-list) | `ZAI_API_KEY` | `zai/glm-5.2` |
+| [Ollama Cloud](https://ollama.com/settings/keys) | `OLLAMA_API_KEY` | `ollama_cloud/qwen3-coder:480b` |
+| [LM Studio](https://lmstudio.ai/) | `LM_STUDIO_BASE_URL` | `lmstudio/<model-id>` |
+| [llama.cpp](https://github.com/ggml-org/llama.cpp) | `LLAMACPP_BASE_URL` | `llamacpp/<model-id>` |
+| [Ollama](https://ollama.com/) | `OLLAMA_BASE_URL` | `ollama/<model-tag>` |
+
+Important provider notes:
+
+- Mistral Codestral uses a separate key from Mistral La Plateforme.
+- OpenCode Zen and OpenCode Go share `OPENCODE_API_KEY` but use different model prefixes.
+- Cloudflare requires both its API token and account ID.
+- Ollama Cloud connects directly to `ollama.com`; use the exact model IDs shown
+  by Divine's model picker. Local Ollama remains available through the separate
+  `ollama/` prefix.
+- Prefer tool-capable models for coding agents. Local models also need enough context for the agent's system prompt and tool definitions.
+
+<details>
+<summary><strong>Local provider setup</strong></summary>
+
+### LM Studio
+
+Start LM Studio's local server, load a tool-capable model, and use the model identifier shown by LM Studio with the `lmstudio/` prefix. The default URL is `http://localhost:1234/v1`.
+
+### llama.cpp
+
+Start `llama-server` with its OpenAI-compatible Chat Completions API and enough context for the model. Use the local model ID with the `llamacpp/` prefix. `LLAMACPP_BASE_URL` defaults to `http://localhost:8080/v1`; Divine accepts either the server root or an explicit `/v1` suffix.
+
+### Ollama
+
+```bash
+ollama pull llama3.1
+ollama serve
+```
+
+Use the tag shown by `ollama list` with the `ollama/` prefix. `OLLAMA_BASE_URL` defaults to `http://localhost:11434`; Divine accepts either the root URL or an explicit `/v1` suffix.
+
+</details>
+
+### Optional Model-Tier Routing
+
+`MODEL` is the fallback for every request. Select a model for `MODEL_FABLE`, `MODEL_OPUS`, `MODEL_SONNET`, or `MODEL_HAIKU` to override an individual Claude Code tier; select **None** to use `MODEL`.
+
+For example, route Opus to `nvidia_nim/moonshotai/kimi-k2.6`, Sonnet to `open_router/openrouter/free`, Haiku to `lmstudio/qwen3.5-coder`, and keep `MODEL` on `zai/glm-5.2`.
+
+<a id="connect-your-client"></a>
+
+## Connect Your Client
+
+For terminal use, start `divine-server`, then run `divine-claude`, `divine-codex`, or `divine-pi`. Use the guides below for editor integrations.
+
+<details>
+<summary><strong>Claude Code in VS Code</strong></summary>
+
+Install the [Claude Code extension](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code). Open VS Code's user settings as JSON and add:
+
+```json
+"claudeCode.disableLoginPrompt": true,
+"claudeCode.environmentVariables": [
+  { "name": "ANTHROPIC_BASE_URL", "value": "http://localhost:8082" },
+  { "name": "ANTHROPIC_AUTH_TOKEN", "value": "freecc" },
+  { "name": "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY", "value": "1" },
+  { "name": "CLAUDE_CODE_AUTO_COMPACT_WINDOW", "value": "190000" },
+  { "name": "DISABLE_AUTOUPDATER", "value": "1" },
+  { "name": "DISABLE_FEEDBACK_COMMAND", "value": "1" },
+  { "name": "DISABLE_ERROR_REPORTING", "value": "1" },
+  { "name": "DISABLE_TELEMETRY", "value": "1" }
+]
+```
+
+Match the port and authentication token to the Admin UI, then reload the extension.
+
+</details>
+
+<details>
+<summary><strong>Codex in VS Code</strong></summary>
+
+Install the [Codex extension](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt). Create or edit `~/.codex/config.toml` (`%USERPROFILE%\.codex\config.toml` on Windows):
+
+```toml
+model_provider = "fcc"
+model = "nvidia_nim/nvidia/nemotron-3-super-120b-a12b"
+
+[model_providers.fcc]
+name = "Divine Gateway"
+base_url = "http://127.0.0.1:8082/v1"
+http_headers = { Authorization = "Bearer freecc" }
+wire_api = "responses"
+```
+
+Match `model`, the port, and bearer token to the Admin UI, then restart VS Code. For WSL-backed Codex, edit the file inside WSL.
+
+</details>
+
+<details>
+<summary><strong>Claude Code in JetBrains ACP</strong></summary>
+
+Edit the installed Claude ACP configuration:
+
+- Windows: `C:\Users\%USERNAME%\AppData\Roaming\JetBrains\acp-agents\installed.json`
+- Linux/macOS: `~/.jetbrains/acp.json`
+
+Set the environment for `acp.registry.claude-acp`:
+
+```json
+"env": {
+  "ANTHROPIC_BASE_URL": "http://localhost:8082",
+  "ANTHROPIC_AUTH_TOKEN": "freecc",
+  "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
+  "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "190000",
+  "DISABLE_AUTOUPDATER": "1",
+  "DISABLE_FEEDBACK_COMMAND": "1",
+  "DISABLE_ERROR_REPORTING": "1",
+  "DISABLE_TELEMETRY": "1"
+}
+```
+
+Match the port and token to the Admin UI, then restart the IDE.
+
+</details>
+
+<details>
+<summary><strong>Claude Code still asks you to log in</strong></summary>
+
+If Claude Code asks you to log in after you configure the Divine URL and token, open its state file:
+
+- Windows: `%USERPROFILE%\.claude.json`
+- macOS/Linux/WSL: `~/.claude.json`
+
+Merge this property into the existing JSON without removing its other fields:
+
+```json
+"hasCompletedOnboarding": true
+```
+
+If the file does not exist, create it with a complete JSON object:
+
+```json
+{
+  "hasCompletedOnboarding": true
+}
+```
+
+Restart Claude Code or the IDE after saving the file.
+
+</details>
+
+<a id="optional-integrations"></a>
+
+## Optional Integrations
+
+Configure integrations from **Admin UI → Messaging**, then click **Validate** and **Apply**.
+
+<div align="center">
+  <img src="assets/admin-messaging.png" alt="Admin UI Messaging view with bot and voice settings" width="700">
+</div>
+
+<details>
+<summary><strong>Discord bot</strong></summary>
+
+1. Create a bot in the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Enable **Message Content Intent** and invite it with read, send,
+   message-history, and **Manage Messages** permissions so `/clear` can remove
+   user prompts.
+3. Set **Messaging Platform** to **discord**.
+4. Enter **Discord Bot Token**, **Allowed Discord Channels**, and an absolute **Allowed Directory**.
+5. Apply the settings and restart the server if requested.
+
+</details>
+
+<details>
+<summary><strong>Telegram bot</strong></summary>
+
+1. Create a bot with [@BotFather](https://t.me/BotFather).
+2. Get your numeric user ID from [@userinfobot](https://t.me/userinfobot).
+   In groups, grant the bot permission to delete messages.
+3. Set **Messaging Platform** to **telegram**.
+4. Enter **Telegram Bot Token**, **Allowed Telegram User ID**, and an absolute **Allowed Directory**.
+5. Apply the settings and restart the server if requested.
+
+</details>
+
+### Messaging commands
+
+| Usage | Behavior |
+| --- | --- |
+| `/stats` | Show session state. |
+| Standalone `/stop` | Cancel all work. |
+| Reply with `/stop` | Cancel only the selected request while other queued requests continue. |
+| Standalone `/clear` | Reset all Divine state and remove every tracked message in that chat, including user prompts, voice notes, Divine replies, Telegram's online notice, and the clear command itself. |
+| Reply with `/clear` | Delete the selected message and its literal platform reply subtree while preserving its ancestors and siblings. |
+
+<details>
+<summary><strong>Voice notes</strong></summary>
+
+Re-run the installer with the voice backend you need.
+
+macOS/Linux:
+
+```bash
+# NVIDIA NIM transcription
+curl -fsSL "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.sh" | sh -s -- --voice-nim
+
+# Local Whisper on CPU or CUDA
+curl -fsSL "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.sh" | sh -s -- --voice-local
+
+# Both backends
+curl -fsSL "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.sh" | sh -s -- --voice-all
+
+# Local Whisper with the CUDA 13.0 PyTorch backend
+curl -fsSL "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.sh" | sh -s -- --voice-local --torch-backend cu130
+```
+
+Windows PowerShell:
+
+```powershell
+# NVIDIA NIM transcription
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.ps1"))) -VoiceNim
+
+# Local Whisper on CPU or CUDA
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.ps1"))) -VoiceLocal
+
+# Both backends
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.ps1"))) -VoiceAll
+
+# Local Whisper with the CUDA 13.0 PyTorch backend
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/install.ps1"))) -VoiceLocal -TorchBackend cu130
+```
+
+Restart `divine-server`. In **Admin UI → Messaging → Voice**, enable voice notes, select `cpu`, `cuda`, or `nvidia_nim`, and choose the Whisper model. Local gated models need `HUGGINGFACE_API_KEY`; NVIDIA NIM transcription needs `NVIDIA_NIM_API_KEY`.
+
+</details>
+
+## Manage Your Installation
+
+### Update
+
+Re-run the matching command from [Install Or Update](#install).
+
+### Uninstall
+
+Stop every running Divine command first. The uninstaller removes the Divine uv tool, verifies every Divine command is gone, and then deletes `~/.fcc/`. It leaves uv, Python, Claude Code, Codex, Pi, and shared PATH entries intact.
+
+macOS/Linux:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/uninstall.sh" | sh
+```
+
+Windows PowerShell:
+
+```powershell
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/err0rgod/divine/main/scripts/uninstall.ps1")))
+```
+
+## Project Links
+
+- [Report bugs or request features](https://github.com/err0rgod/divine/issues)
+- [Architecture and extension guide](ARCHITECTURE.md)
+- [Contributing guide](CONTRIBUTING.md)
 
 ## License
 
-This project is provided as-is for educational and development purposes. Please review the terms of service of the target API providers before routing production traffic.
+MIT License. See [LICENSE](LICENSE) for details.

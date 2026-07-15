@@ -1,0 +1,158 @@
+"""Tests for the Wafer OpenAI-chat provider."""
+
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from divine.config.constants import ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS
+from divine.config.provider_catalog import WAFER_DEFAULT_BASE
+from divine.core.anthropic.models import Message, MessagesRequest, Tool
+from divine.providers.base import ProviderConfig
+from divine.providers.openai_chat import (
+    OPENAI_CHAT_PROFILES,
+    OpenAIChatProvider,
+)
+from divine.providers.rate_limit import ProviderRateLimiter
+from tests.providers.support import passthrough_rate_limiter, profiled_provider
+
+
+class CountingWaferProvider(OpenAIChatProvider):
+    def __init__(self, config: ProviderConfig, *, rate_limiter: ProviderRateLimiter):
+        super().__init__(
+            config,
+            profile=OPENAI_CHAT_PROFILES["wafer"],
+            rate_limiter=rate_limiter,
+        )
+        self.thinking_checks = 0
+
+    def _is_thinking_enabled(
+        self, request: Any, thinking_enabled: bool | None = None
+    ) -> bool:
+        self.thinking_checks += 1
+        return super()._is_thinking_enabled(request, thinking_enabled)
+
+
+@pytest.fixture
+def wafer_config():
+    return ProviderConfig(
+        api_key="test-wafer-key",
+        base_url=WAFER_DEFAULT_BASE,
+        rate_limit=10,
+        rate_window=60,
+    )
+
+
+@pytest.fixture
+def wafer_provider(wafer_config):
+    return profiled_provider(
+        "wafer",
+        wafer_config,
+        rate_limiter=passthrough_rate_limiter(),
+    )
+
+
+def test_default_base_url():
+    assert WAFER_DEFAULT_BASE == "https://pass.wafer.ai/v1"
+
+
+def test_init_uses_openai_chat_provider(wafer_provider):
+    assert isinstance(wafer_provider, OpenAIChatProvider)
+    assert wafer_provider._api_key == "test-wafer-key"
+    assert wafer_provider._base_url == WAFER_DEFAULT_BASE
+    assert wafer_provider._provider_name == "WAFER"
+
+
+def test_build_request_body_openai_shape_and_defaults(wafer_provider):
+    request = MessagesRequest.model_validate(
+        {
+            "model": "DeepSeek-V4-Pro",
+            "messages": [Message(role="user", content="Hello")],
+            "tools": [
+                Tool(
+                    name="echo",
+                    description="Echo input",
+                    input_schema={"type": "object", "properties": {}},
+                )
+            ],
+            "thinking": {"type": "enabled", "budget_tokens": 2048},
+        }
+    )
+
+    body = wafer_provider._build_request_body(request)
+
+    assert body["model"] == "DeepSeek-V4-Pro"
+    assert body["messages"][0] == {"role": "user", "content": "Hello"}
+    assert body["tools"][0]["function"]["name"] == "echo"
+    assert body["extra_body"]["thinking"] == {"type": "enabled"}
+    assert body["max_tokens"] == ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS
+
+
+def test_build_request_body_honors_effective_no_thinking(wafer_provider):
+    request = MessagesRequest.model_validate(
+        {
+            "model": "DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Explore the codebase."}],
+        }
+    )
+
+    body = wafer_provider._build_request_body(request, thinking_enabled=False)
+
+    assert body["extra_body"]["thinking"] == {"type": "disabled"}
+
+
+def test_build_request_body_preserves_request_disabled_thinking(wafer_provider):
+    request = MessagesRequest.model_validate(
+        {
+            "model": "DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Explore the codebase."}],
+            "thinking": {"type": "disabled"},
+        }
+    )
+
+    body = wafer_provider._build_request_body(request, thinking_enabled=True)
+
+    assert body["extra_body"]["thinking"] == {"type": "disabled"}
+
+
+def test_build_request_body_resolves_thinking_once(wafer_config):
+    provider = CountingWaferProvider(
+        wafer_config,
+        rate_limiter=passthrough_rate_limiter(),
+    )
+    request = MessagesRequest.model_validate(
+        {
+            "model": "DeepSeek-V4-Pro",
+            "messages": [{"role": "user", "content": "Explore the codebase."}],
+        }
+    )
+
+    body = provider._build_request_body(request, thinking_enabled=False)
+
+    assert body["extra_body"]["thinking"] == {"type": "disabled"}
+    assert provider.thinking_checks == 1
+
+
+@pytest.mark.asyncio
+async def test_lists_models_from_openai_models_endpoint(wafer_provider):
+    wafer_provider._client.models.list = AsyncMock(
+        return_value=MagicMock(
+            data=[MagicMock(id="DeepSeek-V4-Pro"), MagicMock(id="MiniMax-M2.7")]
+        )
+    )
+
+    assert await wafer_provider.list_model_ids() == frozenset(
+        {"DeepSeek-V4-Pro", "MiniMax-M2.7"}
+    )
+
+    wafer_provider._client.models.list.assert_awaited_once_with()
+
+
+@pytest.mark.asyncio
+async def test_cleanup_closes_openai_client(wafer_provider):
+    wafer_provider._client = MagicMock()
+    wafer_provider._client.close = AsyncMock()
+
+    await wafer_provider.cleanup()
+
+    wafer_provider._client.close.assert_awaited_once()

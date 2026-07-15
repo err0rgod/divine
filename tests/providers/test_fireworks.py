@@ -1,0 +1,133 @@
+"""Tests for the Fireworks AI OpenAI-chat provider."""
+
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from divine.application.errors import InvalidRequestError
+from divine.config.constants import ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS
+from divine.config.provider_catalog import FIREWORKS_DEFAULT_BASE
+from divine.core.anthropic.models import Message, MessagesRequest
+from divine.providers.base import ProviderConfig
+from divine.providers.openai_chat import OpenAIChatProvider
+from tests.providers.support import passthrough_rate_limiter, profiled_provider
+
+
+@pytest.fixture
+def fireworks_provider():
+    return profiled_provider(
+        "fireworks",
+        ProviderConfig(
+            api_key="test_fireworks_key",
+            base_url=FIREWORKS_DEFAULT_BASE,
+            rate_limit=10,
+            rate_window=60,
+            enable_thinking=True,
+        ),
+        rate_limiter=passthrough_rate_limiter(),
+    )
+
+
+def test_init_uses_openai_chat_provider(fireworks_provider):
+    assert isinstance(fireworks_provider, OpenAIChatProvider)
+    assert fireworks_provider._api_key == "test_fireworks_key"
+    assert fireworks_provider._base_url == FIREWORKS_DEFAULT_BASE
+
+
+def test_base_url_constant():
+    assert FIREWORKS_DEFAULT_BASE == "https://api.fireworks.ai/inference/v1"
+
+
+def test_build_request_body_openai_chat_shape(fireworks_provider):
+    request = MessagesRequest(
+        model="accounts/fireworks/models/glm-5p1",
+        max_tokens=100,
+        messages=[Message(role="user", content="Hello")],
+        system="System prompt",
+    )
+
+    body = fireworks_provider._build_request_body(request)
+
+    assert body["model"] == "accounts/fireworks/models/glm-5p1"
+    assert body["max_tokens"] == 100
+    assert body["messages"] == [
+        {"role": "system", "content": "System prompt"},
+        {"role": "user", "content": "Hello"},
+    ]
+
+
+def test_build_request_body_default_max_tokens(fireworks_provider):
+    request = MessagesRequest(
+        model="m",
+        messages=[Message(role="user", content="x")],
+    )
+
+    body = fireworks_provider._build_request_body(request)
+
+    assert body["max_tokens"] == ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS
+
+
+def test_build_request_body_global_disable_blocks_thinking():
+    provider = profiled_provider(
+        "fireworks",
+        ProviderConfig(
+            api_key="k",
+            base_url=FIREWORKS_DEFAULT_BASE,
+            rate_limit=1,
+            rate_window=1,
+            enable_thinking=False,
+        ),
+        rate_limiter=passthrough_rate_limiter(),
+    )
+    request = MessagesRequest.model_validate(
+        {
+            "model": "m",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": [{"type": "thinking", "thinking": "hidden"}],
+                }
+            ],
+        }
+    )
+
+    body = provider._build_request_body(request)
+
+    assert "reasoning_content" not in body["messages"][0]
+
+
+def test_build_request_body_preserves_validated_extra_body(fireworks_provider):
+    request = MessagesRequest.model_validate(
+        {
+            "model": "m",
+            "messages": [{"role": "user", "content": "x"}],
+            "extra_body": {"custom_param": "value"},
+        }
+    )
+
+    body = fireworks_provider._build_request_body(request)
+
+    assert body["extra_body"] == {"custom_param": "value"}
+
+
+def test_build_request_body_rejects_reserved_extra_body_keys(fireworks_provider):
+    request = MessagesRequest.model_validate(
+        {
+            "model": "m",
+            "messages": [{"role": "user", "content": "x"}],
+            "extra_body": {"temperature": 0.1},
+        }
+    )
+
+    with pytest.raises(InvalidRequestError, match="extra_body must not override"):
+        fireworks_provider._build_request_body(request)
+
+
+@pytest.mark.asyncio
+async def test_cleanup_closes_openai_client(fireworks_provider):
+    fireworks_provider._client = MagicMock()
+    fireworks_provider._client.close = AsyncMock()
+
+    await fireworks_provider.cleanup()
+
+    fireworks_provider._client.close.assert_awaited_once()

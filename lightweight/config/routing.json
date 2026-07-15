@@ -1,0 +1,104 @@
+{
+    "coding": [
+        [
+            "Mistral",
+            "codestral-latest"
+        ],
+        [
+            "Mistral",
+            "mistral-large-latest"
+        ],
+        [
+            "ForgeAI",
+            "gpt-5.5"
+        ],
+        [
+            "NVIDIA",
+            "qwen/qwen3.5-397b-a17b"
+        ],
+        [
+            "NVIDIA",
+            "meta/llama-3.1-70b-instruct"
+        ]
+    ],
+    "reasoning": [
+        [
+            "AgentRouter",
+            "opus 4.8"
+        ],
+        [
+            "AgentRouter",
+            "gpt 5.5"
+        ],
+        [
+            "AgentRouter",
+            "glm 5.2"
+        ],
+        [
+            "ForgeAI",
+            "claude-sonnet-4-6-thinking"
+        ],
+        [
+            "ForgeAI",
+            "gpt-5.5"
+        ],
+        [
+            "NVIDIA",
+            "deepseek-ai/deepseek-v4-pro"
+        ],
+        [
+            "NVIDIA",
+            "z-ai/glm-5.2"
+        ]
+    ],
+    "rag": [
+        [
+            "Cohere",
+            "command-a-plus-05-2026"
+        ],
+        [
+            "Cohere",
+            "command-a-reasoning-08-2025"
+        ]
+    ],
+    "fast": [
+        [
+            "Cerebras",
+            "gpt-oss-120b"
+        ],
+        [
+            "Cerebras",
+            "gemma-4-31b"
+        ],
+        [
+            "Groq",
+            "llama-3.3-70b-versatile"
+        ],
+        [
+            "Groq",
+            "llama-3.1-8b-instant"
+        ],
+        [
+            "Mistral",
+            "magistral-medium-latest"
+        ],
+        [
+            "NVIDIA",
+            "meta/llama-3.1-8b-instruct"
+        ],
+        [
+            "NVIDIA",
+            "moonshotai/kimi-k2.6"
+        ]
+    ],
+    "fallback": [
+        [
+            "Bazaarlink",
+            "auto:free"
+        ],
+        [
+            "Bluesmind",
+            "meta/llama-3.1-8b-instruct"
+        ]
+    ]
+}

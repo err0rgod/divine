@@ -1,0 +1,9 @@
+fix agentrouter and remoaining providers 
+be able to dynamically switch bw proxies
+fix ForgeAI
+fix the providers and use that as the main chat option
+make all providers as same type (give option of selected models , token per second)
+add tui proxy provider changer and persistent tui
+very proper documentation 
+add very good and detailed external readme docs
+use typed python 
