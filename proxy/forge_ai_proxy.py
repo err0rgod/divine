@@ -4,7 +4,7 @@ import urllib.request
 import json
 import os
 
-PORT = 8001
+PORT = 6900
 FORGE_AI_API_URL = "https://forge-gateway-api.fly.dev/v1/chat/completions"
 DEFAULT_TARGET_MODEL = "gpt-5.5"
 

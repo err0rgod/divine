@@ -7,7 +7,7 @@ import os
 #  $env:ANTHROPIC_API_KEY="dummy_key"
 # $env:ANTHROPIC_BASE_URL="http://127.0.0.1:8000"
 
-PORT = 8000  # using 8001 to avoid conflicting with proxy.py
+PORT = 6900  # using 6900 for proxy
 MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions"
 MISTRAL_API_KEYS = [
     "pasOCuI0UgqFN1ySWUduXaozqG29vQbh",

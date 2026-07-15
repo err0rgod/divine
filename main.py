@@ -56,7 +56,7 @@ def start_services(start_web=True, start_proxy=True):
         except:
             pass
             
-        console.print(f"[green]►[/] Starting {active_proxy} Proxy on http://127.0.0.1:8001")
+        console.print(f"[green]►[/] Starting {active_proxy} Proxy on http://127.0.0.1:6900")
         if active_proxy == "AgentRouter":
             run_service("PROXY", ["python", "proxy/agentrouter_proxy.py"], "yellow")
         elif active_proxy == "ForgeAI":
@@ -115,27 +115,27 @@ def main():
             console.print("   `claude-3-5-sonnet-20241022: Mistral, codestral-latest`")
             console.print("\n[bold]2. Run this in your terminal before launching Claude Code:[/]")
             console.print("   [dim]# Windows (PowerShell):[/]")
-            console.print("   $env:ANTHROPIC_BASE_URL=\"http://127.0.0.1:8001/proxy/code\"")
+            console.print("   $env:ANTHROPIC_BASE_URL=\"http://127.0.0.1:6900/v1/messages\"")
             console.print("   $env:ANTHROPIC_API_KEY=\"sk-claudecode-123\"")
             console.print("\n   [dim]# Mac / Linux:[/]")
-            console.print("   export ANTHROPIC_BASE_URL=\"http://127.0.0.1:8001/proxy/code\"")
+            console.print("   export ANTHROPIC_BASE_URL=\"http://127.0.0.1:6900/v1/messages\"")
             console.print("   export ANTHROPIC_API_KEY=\"sk-claudecode-123\"")
         
         elif app_choice == "Codex CLI":
             console.print("Codex CLI expects OpenAI's API. Divine routes this to your Coding Pool.")
             console.print("\n[bold]Run this in your terminal before launching Codex CLI:[/]")
             console.print("   [dim]# Windows (PowerShell):[/]")
-            console.print("   $env:OPENAI_BASE_URL=\"http://127.0.0.1:8001/proxy/code/v1\"")
+            console.print("   $env:OPENAI_BASE_URL=\"http://127.0.0.1:6900/v1\"")
             console.print("   $env:OPENAI_API_KEY=\"sk-codex-123\"")
             console.print("\n   [dim]# Mac / Linux:[/]")
-            console.print("   export OPENAI_BASE_URL=\"http://127.0.0.1:8001/proxy/code/v1\"")
+            console.print("   export OPENAI_BASE_URL=\"http://127.0.0.1:6900/v1\"")
             console.print("   export OPENAI_API_KEY=\"sk-codex-123\"")
             
         elif app_choice == "Cursor":
             console.print("You can add Divine as a custom OpenAI-compatible endpoint in Cursor's settings.")
             console.print("\n[bold]1. Open Cursor Settings -> Models[/]")
             console.print("[bold]2. Add Custom OpenAI Endpoint:[/]")
-            console.print("   URL: http://127.0.0.1:8001/proxy/code/v1")
+            console.print("   URL: http://127.0.0.1:6900/v1")
             console.print("   API Key: sk-cursor-123")
             console.print("[bold]3. Toggle 'Custom models' and type the model you want to alias.[/]")
             
@@ -189,10 +189,10 @@ def main():
             "An OpenAI-compatible universal proxy gateway pooling advanced models.\n\n"
             "[bold]Ports:[/]\n"
             "Web Dashboard: 8000\n"
-            "Proxy Server: 8001\n\n"
+            "Proxy Server: 6900\n\n"
             "[bold]Proxy Endpoints:[/]\n"
-            "General Chat: http://127.0.0.1:8001/proxy/chat/v1/chat/completions\n"
-            "Coding CLI: http://127.0.0.1:8001/proxy/code/v1/chat/completions",
+            "General Chat: http://127.0.0.1:6900/v1/chat/completions\n"
+            "Coding CLI: http://127.0.0.1:6900/v1/messages",
             title="System Info",
             border_style="cyan"
         ))

@@ -4,7 +4,7 @@ import urllib.request
 import json
 import os
 
-PORT = 8001
+PORT = 6900
 AGENTROUTER_API_URL = "https://agentrouter.org/v1/chat/completions"
 DEFAULT_TARGET_MODEL = "claude-opus-4-8"
 
