@@ -139,12 +139,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/50 transition-shadow">
                         <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Active Provider Proxy</h3>
-                        <p class="text-xs text-zinc-500 mb-3">Changes take effect next time you start the proxy.</p>
-                        <select id="active-proxy" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow cursor-pointer">
+                        <p class="text-xs text-zinc-500 mb-3">Select the translation proxy for external requests.</p>
+                        <select id="active-proxy" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow cursor-pointer mb-4">
                             <option value="Mistral">Mistral Translation Proxy</option>
                             <option value="AgentRouter">AgentRouter Translation Proxy</option>
                             <option value="ForgeAI">Forge AI Translation Proxy</option>
                         </select>
+                        
+                        <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Target Model</h3>
+                        <p class="text-xs text-zinc-500 mb-3">The model the proxy will spoof (e.g. gpt-5.5, claude-opus-4-8).</p>
+                        <input type="text" id="target-model" class="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 text-sm font-mono text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow" placeholder="gpt-5.5">
                     </div>
                     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/50 transition-shadow">
                         <h3 class="font-semibold text-zinc-900 dark:text-zinc-100 mb-3">External App API Keys</h3>
@@ -296,10 +300,14 @@
             .then(res => res.json())
             .then(data => {
                 const activeProxySelect = document.getElementById('active-proxy');
+                const targetModelInput = document.getElementById('target-model');
                 const keysTa = document.getElementById('proxy-keys');
                 
                 if (data.active) {
                     activeProxySelect.value = data.active;
+                }
+                if (data.target_model) {
+                    targetModelInput.value = data.target_model;
                 }
                 
                 if (data.keys && Array.isArray(data.keys)) {
@@ -434,9 +442,10 @@
             });
 
             // Parse Proxy Config
-            const proxyConfig = { active: "Mistral", keys: [] };
+            const proxyConfig = { active: "Mistral", target_model: "", keys: [] };
             
             proxyConfig.active = document.getElementById('active-proxy').value;
+            proxyConfig.target_model = document.getElementById('target-model').value.trim();
             
             document.getElementById('proxy-keys').value.split('\n').forEach(line => {
                 const key = line.trim();
