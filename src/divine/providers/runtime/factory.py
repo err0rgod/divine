@@ -107,6 +107,16 @@ def _create_github_models(
     return GitHubModelsProvider(config, rate_limiter=rate_limiter)
 
 
+def _create_forge_ai(
+    config: ProviderConfig,
+    _settings: Settings,
+    rate_limiter: ProviderRateLimiter,
+) -> BaseProvider:
+    from divine.providers.forge_ai import ForgeAIProvider
+
+    return ForgeAIProvider(config, rate_limiter=rate_limiter)
+
+
 _SPECIAL_PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "nvidia_nim": _create_nvidia_nim,
     "open_router": _create_open_router,
@@ -116,6 +126,7 @@ _SPECIAL_PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "cloudflare": _create_cloudflare,
     "gemini": _create_gemini,
     "github_models": _create_github_models,
+    "forge_ai": _create_forge_ai,
 }
 
 _profiled_ids = set(OPENAI_CHAT_PROFILES)

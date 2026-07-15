@@ -11,6 +11,7 @@ from divine.providers.github_models import GitHubModelsProvider
 from divine.providers.lmstudio import LMStudioProvider
 from divine.providers.mistral import MistralProvider
 from divine.providers.nvidia_nim import NvidiaNimProvider
+from divine.providers.forge_ai import ForgeAIProvider
 from divine.providers.open_router import OpenRouterProvider
 from divine.providers.openai_chat import (
     OPENAI_CHAT_PROFILES,
@@ -98,6 +99,7 @@ def test_provider_and_platform_registries_include_advertised_builtins() -> None:
         "lmstudio": LMStudioProvider,
         "github_models": GitHubModelsProvider,
         "gemini": GeminiProvider,
+        "forge_ai": ForgeAIProvider,
     }
     assert set(OPENAI_CHAT_PROFILES).isdisjoint(specialized_provider_classes)
     assert set(PROVIDER_CATALOG) == (

@@ -174,6 +174,7 @@ Enter the listed setting in the Admin UI, open **Model Config**, then search the
 | [LM Studio](https://lmstudio.ai/) | `LM_STUDIO_BASE_URL` | `lmstudio/<model-id>` |
 | [llama.cpp](https://github.com/ggml-org/llama.cpp) | `LLAMACPP_BASE_URL` | `llamacpp/<model-id>` |
 | [Ollama](https://ollama.com/) | `OLLAMA_BASE_URL` | `ollama/<model-tag>` |
+| [Forge AI](https://forge.ai/) | `FORGE_API_KEY` | `forge_ai/<model-id>` |
 
 Important provider notes:
 

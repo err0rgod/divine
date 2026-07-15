@@ -413,7 +413,7 @@ wheels = [
 
 [[package]]
 name = "divine"
-version = "4.6.4"
+version = "4.6.5"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
