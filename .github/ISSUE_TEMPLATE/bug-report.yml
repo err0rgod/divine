@@ -1,5 +1,5 @@
 name: Bug report
-description: Report something that is not working in Free Claude Code.
+description: Report something that is not working in Divine.
 title: "[Bug]: "
 labels:
   - bug
@@ -7,8 +7,8 @@ body:
   - type: input
     id: fcc-version
     attributes:
-      label: FCC version
-      description: Run `fcc-server --version` and enter only the version number, such as `4.6.1`. If FCC did not install, enter `None`.
+      label: Divine version
+      description: Run `divine-server --version` and enter only the version number, such as `4.6.1`. If Divine did not install, enter `None`.
       placeholder: "4.6.1 or None"
     validations:
       required: true

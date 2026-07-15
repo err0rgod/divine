@@ -23,7 +23,6 @@ def test_bug_form_requests_an_exact_version_or_none() -> None:
     assert "enter `None`" in form
     assert 'placeholder: "4.6.1 or None"' in form
     assert "not installed" not in form
-    assert "divine" not in form
 
 
 @pytest.mark.parametrize(

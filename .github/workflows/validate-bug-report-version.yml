@@ -17,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Validate FCC version
+      - name: Validate Divine version
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const issue = context.payload.issue;
-            const fieldPattern = "^### FCC version\\r?\\n+\\s*([^\\r\\n]+)";
-            const versionPattern = "^(?:(?:free-claude-code )?\\d+\\.\\d+\\.\\d+|None)$";
+            const fieldPattern = "^### Divine version\\r?\\n+\\s*([^\\r\\n]+)";
+            const versionPattern = "^(?:(?:divine )?\\d+\\.\\d+\\.\\d+|None)$";
             const match = (issue.body || "").match(new RegExp(fieldPattern, "m"));
             const version = match?.[1]?.trim() || "";
             const valid = new RegExp(versionPattern).test(version);
@@ -54,7 +54,7 @@ jobs:
                     ...repo,
                     name: labelName,
                     color: "d4c5f9",
-                    description: "FCC version must be number.number.number or None",
+                    description: "Divine version must be number.number.number or None",
                   });
                 } catch (createError) {
                   if (createError.status !== 422) throw createError;
@@ -75,6 +75,6 @@ jobs:
               await github.rest.issues.createComment({
                 ...repo,
                 issue_number,
-                body: `${marker}\nPlease edit **FCC version** to contain only an exact \`number.number.number\` value, such as \`4.6.1\`, or \`None\`. Run \`fcc-server --version\` to find the installed version.`,
+                body: `${marker}\nPlease edit **Divine version** to contain only an exact \`number.number.number\` value, such as \`4.6.1\`, or \`None\`. Run \`divine-server --version\` to find the installed version.`,
               });
             }

@@ -20,6 +20,7 @@ from divine.config.provider_catalog import (
 )
 from divine.providers.cloudflare import CloudflareProvider
 from divine.providers.deepseek import DeepSeekProvider
+from divine.providers.forge_ai import ForgeAIProvider
 from divine.providers.gemini import GeminiProvider
 from divine.providers.github_models import GitHubModelsProvider
 from divine.providers.lmstudio import LMStudioProvider
@@ -90,6 +91,8 @@ def _make_settings(**overrides):
     mock.groq_proxy = ""
     mock.cerebras_api_key = ""
     mock.cerebras_proxy = ""
+    mock.forge_ai_api_key = "test_forge_key"
+    mock.forge_ai_proxy = ""
     mock.ollama_cloud_proxy = ""
     mock.provider_rate_limit = 40
     mock.provider_rate_window = 60
@@ -354,6 +357,7 @@ def test_create_provider_instantiates_each_builtin():
         groq_api_key="test_groq_key",
         cerebras_api_key="test_cerebras_key",
         fireworks_api_key="test_fireworks_key",
+        forge_ai_api_key="test_forge_key",
         cloudflare_api_token="test_cloudflare_token",
         cloudflare_account_id="test_cloudflare_account",
         vercel_ai_gateway_api_key="test_vercel_key",
@@ -392,6 +396,7 @@ def test_create_provider_instantiates_each_builtin():
         "groq": OpenAIChatProvider,
         "sambanova": OpenAIChatProvider,
         "cerebras": OpenAIChatProvider,
+        "forge_ai": ForgeAIProvider,
     }
     sentinel_limiter = MagicMock(spec=ProviderRateLimiter)
 
