@@ -177,7 +177,6 @@ def handle_openai_stream(handler, response, original_model, is_anthropic):
     in_text_block = False
     active_tools = {}
     sent_stop = False
-
     try:
         for line in response.iter_lines():
             if not line: continue

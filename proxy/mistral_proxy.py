@@ -149,6 +149,7 @@ def mistral_to_anthropic_response(mistral_resp, original_model):
     }
 
 
+
 def handle_openai_stream(handler, response, original_model, is_anthropic):
     handler.send_response(200)
     handler.send_header("Content-Type", "text/event-stream")
@@ -157,7 +158,33 @@ def handle_openai_stream(handler, response, original_model, is_anthropic):
     handler.end_headers()
     
     if not is_anthropic:
-        try:
+        for line in response.iter_lines():
+            if line:
+                handler.wfile.write(line + b'\n')
+                handler.wfile.flush()
+        return
+
+    import os
+    import json
+    msg_id = "msg_proxy_" + os.urandom(4).hex()
+    
+    start_event = {
+        "type": "message_start",
+        "message": {
+            "id": msg_id, "type": "message", "role": "assistant",
+            "content": [], "model": original_model,
+            "stop_reason": None, "stop_sequence": None,
+            "usage": {"input_tokens": 0, "output_tokens": 0}
+        }
+    }
+    handler.wfile.write(f"event: message_start\ndata: {json.dumps(start_event)}\n\n".encode('utf-8'))
+
+    current_block_index = -1
+    in_text_block = False
+    active_tools = {}
+    sent_stop = False
+
+    try:
         for line in response.iter_lines():
             if not line: continue
             line = line.decode('utf-8', errors='ignore').strip()
