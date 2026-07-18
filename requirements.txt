@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-requests
-python-dotenv
-rich
-questionary
-sse-starlette
-jinja2
