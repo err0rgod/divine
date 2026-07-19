@@ -1,0 +1,21 @@
+:root {
+  --md-primary-fg-color: #5b3fa3;
+  --md-accent-fg-color: #d89216;
+}
+
+.md-header__title {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.hero {
+  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 32%, transparent);
+  border-radius: 0.6rem;
+  padding: 1.4rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--md-primary-fg-color) 10%, transparent), transparent);
+}
+
+.status-note {
+  font-size: 0.8rem;
+  opacity: 0.78;
+}

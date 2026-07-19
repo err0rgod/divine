@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: divine-router-docs-err0rgod
+    runtime: static
+    repo: https://github.com/err0rgod/divine
+    branch: feat/divine-router
+    buildCommand: python -m pip install --upgrade pip && python -m pip install '.[docs]' && mkdocs build --strict
+    staticPublishPath: ./site
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - docs/**
+        - mkdocs.yml
+        - pyproject.toml
+        - README.md
+        - ARCHITECTURE.md
+        - SECURITY.md
+        - CONTRIBUTING.md
+        - CHANGELOG.md
+        - PROVIDER_COMPATIBILITY.md
+        - CLI_INTEGRATIONS.md
+        - AUTO_ROUTING.md
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

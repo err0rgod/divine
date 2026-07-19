@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+.uv-cache
+.pytest_cache
+.test-tmp
+site
+dist
+build
+*.db
+*.log
+.env
+render.exe
+Agents.md
