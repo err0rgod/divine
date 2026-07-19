@@ -1,0 +1,98 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "divine-router"
+version = "0.1.0"
+description = "Local-first, self-hostable AI API gateway"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "Divine Router contributors" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+dependencies = [
+  "alembic>=1.14",
+  "cryptography>=44",
+  "fastapi>=0.115",
+  "httpx>=0.28",
+  "keyring>=25",
+  "platformdirs>=4.3",
+  "pydantic>=2.10",
+  "pydantic-settings>=2.7",
+  "python-dotenv>=1.0",
+  "sqlalchemy>=2.0",
+  "textual>=1.0",
+  "tomli-w>=1.1",
+  "typer>=0.15",
+  "uvicorn>=0.34",
+]
+
+[project.optional-dependencies]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.6",
+]
+test = [
+  "anthropic>=0.45",
+  "build>=1.2",
+  "mypy>=1.14",
+  "openai>=1.60",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.25",
+  "pytest-cov>=6.0",
+  "respx>=0.22",
+  "ruff>=0.9",
+]
+
+[project.scripts]
+divine = "divine_router.cli:app"
+divine-claude = "divine_router.wrappers:claude_main"
+divine-codex = "divine_router.wrappers:codex_main"
+divine-opencode = "divine_router.wrappers:opencode_main"
+divine-aider = "divine_router.wrappers:aider_main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/divine_router"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "S", "RUF"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S104", "S105", "S106", "S603", "S607"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["divine_router"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers --basetemp=.test-tmp"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+  "live: opt-in tests that call a real provider",
+  "sdk: local SDK compatibility tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["divine_router"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 85

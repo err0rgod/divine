@@ -1,1 +1,36 @@
+# Secrets and local credentials
 *.env
+*.key
+*.pem
+credentials*.json
+
+# Python and tooling
+__pycache__/
+*.py[cod]
+.venv/
+.uv-cache/
+.mypy_cache/
+.pytest_cache/
+pytest-cache-files-*/
+.test-tmp/
+.tmp/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Runtime state and generated output
+*.db
+*.sqlite*
+logs/
+site/
+.divine/
+.backups/
+
+# Local tools and OS files
+render.exe
+.DS_Store
+Thumbs.db
