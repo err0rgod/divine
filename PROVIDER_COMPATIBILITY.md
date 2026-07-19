@@ -1,7 +1,9 @@
 # Provider Compatibility
 
 No provider is marked live-tested in this build. Adapter behavior is mocked; provider templates
-are disabled until credentials and models are explicitly configured.
+are disabled until credentials and models are explicitly configured. One bounded request each was
+attempted for Groq and DeepSeek, but both stored credentials were rejected with HTTP 401 before a
+completion; neither credential was retried.
 
 | Provider family | Template | Mock-tested | Live-tested | Streaming | Tools | Notes |
 |---|---:|---:|---:|---:|---:|---|
@@ -10,6 +12,14 @@ are disabled until credentials and models are explicitly configured.
 | Gemini | Yes | Payload tested | No | Implemented | Implemented | Live behavior unverified |
 | AWS Bedrock | Extension | No | No | No | No | Requires SigV4 extension |
 | Google Vertex AI | Extension | No | No | No | No | Requires ADC extension |
+
+## Live-test matrix (2026-07-19)
+
+| Provider | Model requested | Discovery | Completion | Result |
+|---|---|---:|---:|---|
+| Groq | `llama-3.1-8b-instant` | 401 | Not attempted | Credential unavailable |
+| DeepSeek | `deepseek-v4-flash` | 401 | Not attempted | Credential unavailable |
+| All others | — | Not run | Not run | Not probed to avoid broad credential charges |
 
 Templates exist for OpenAI, Anthropic, Gemini, DeepSeek, Groq, Cerebras, NVIDIA, Mistral, xAI,
 Together, Fireworks, SambaNova, Cohere, Hugging Face, Cloudflare, Perplexity, Azure OpenAI,

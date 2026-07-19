@@ -1,0 +1,16 @@
+services:
+  divine-router:
+    build: .
+    ports:
+      - "127.0.0.1:8742:8742"
+    volumes:
+      - ./examples/docker-config.toml:/home/divine/.config/divine-router/config.toml:ro
+      - divine-data:/home/divine/.local/share/divine-router
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  divine-data:

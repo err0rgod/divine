@@ -30,7 +30,7 @@ provisional entries only after the corresponding checks have run.
 - Routing/reliability: explicit aliases, automatic filtering/scoring, retries, fallbacks, circuit
   breakers, provider health, and routing metadata implemented
 - Core checks: Ruff and strict mypy pass; 41 tests pass (mocked, no live-provider claim)
-- Core coverage: 91.30% across protocol, routing, and reliability modules (85% gate passed)
+- Core coverage: 91.59% across protocol, routing, and reliability modules (85% gate passed)
 - SDK smoke tests: official OpenAI and Anthropic Python SDKs pass non-streaming, streaming,
   tool-call, and representative Responses requests against the local ASGI application
 - Operations surface: Typer lifecycle/configuration commands and the keyboard-first Textual TUI
@@ -40,8 +40,20 @@ provisional entries only after the corresponding checks have run.
   automatic routing is rejected and Aider reports unavailable in this environment
 - Wrapper/operations verification: generated-profile, argument-forwarding, spaces-in-paths,
   redaction, child-exit-code, CLI initialization/export, stale-PID, and TUI navigation tests pass
-- Current local suite: 55 tests passed; Ruff and strict mypy pass (mocked, no live-provider claim)
-- Provider live tests: not yet run
-- Real coding-agent end-to-end tests: not yet run; fake-agent coverage is not treated as live proof
+- Current local suite: 55 tests passed plus 1 credential-gated live test skipped by default; Ruff
+  and strict mypy pass (mocked, no live-provider claim)
+- Provider live tests: Groq and DeepSeek each reached official model discovery once and returned
+  HTTP 401; credentials marked unavailable and not retried; all other keys intentionally untested
+- Real coding-agent end-to-end tests: blocked because no tested compatible provider credential is
+  valid; fake-agent coverage is not treated as live proof
+- Persistence migration: Alembic upgrade to revision `0001` and downgrade to base both passed
+- Documentation: MkDocs Material site created; `mkdocs build --strict` passes
+- Packaging: wheel and source distribution built; wheel plus dependencies installed in a clean
+  Python 3.13 environment; package import and installed `divine --help` passed
+- Server smoke: real isolated background start, authenticated health/status, and stop passed
+- Render Blueprint: authenticated CLI validation passed (`valid: true`, one static-site action)
+- Docker: Dockerfile and Compose configuration created; build remains unverified because the
+  installed Docker Desktop daemon is not running
 - GitHub CI: blocked by invalid GitHub CLI authentication
-- Render deployment: not yet attempted
+- Render deployment: blocked until commits can be pushed to the private GitHub repository; no
+  service was created from stale remote source
