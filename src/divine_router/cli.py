@@ -120,7 +120,7 @@ def start() -> None:
     paths.data_dir.mkdir(parents=True, exist_ok=True)
     paths.log_dir.mkdir(parents=True, exist_ok=True)
     log_handle = (paths.log_dir / "server.log").open("a", encoding="utf-8")
-    flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+    flags = int(getattr(subprocess, "CREATE_NO_WINDOW", 0)) if os.name == "nt" else 0
     process = subprocess.Popen(
         [sys.executable, "-m", "divine_router.cli", "serve"],
         stdin=subprocess.DEVNULL,

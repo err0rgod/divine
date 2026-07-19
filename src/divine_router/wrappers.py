@@ -188,7 +188,7 @@ def _ensure_server(server_url: str, token: str) -> subprocess.Popen[bytes] | Non
         return None
     except httpx.HTTPError:
         pass
-    flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+    flags = int(getattr(subprocess, "CREATE_NO_WINDOW", 0)) if os.name == "nt" else 0
     process = subprocess.Popen(
         [sys.executable, "-m", "divine_router.cli", "serve"],
         stdin=subprocess.DEVNULL,
