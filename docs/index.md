@@ -33,6 +33,11 @@ keeping credentials, model selection, routing, and reliability under your contro
 Administration includes health, readiness, models, routes, provider health, and usage endpoints.
 All endpoints require the independent Divine token by default, including localhost.
 
+## Deployment status
+
+The [public documentation site](https://divine-router-docs-err0rgod.onrender.com/) is deployed from
+the `feat/divine-router` branch. Public documentation deployment verified on 19 July 2026.
+
 !!! warning "Compatibility is evidence-based"
 
     A provider template is not a live compatibility claim. Consult the

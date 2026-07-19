@@ -11,7 +11,7 @@ provisional entries only after the corresponding checks have run.
 - Starting commit: `3e1670e`
 - Python: 3.13.12 selected; Python 3.14 is also installed
 - Shell/OS: PowerShell on Windows
-- GitHub CLI: 2.92.0; authentication invalid, so pushes and CI inspection are blocked
+- GitHub CLI: 2.92.0; authentication was initially invalid and was restored during delivery
 - Render CLI: 2.21.0; authenticated; no existing Divine Router documentation static site found
 - Docker: client 29.5.3 installed; daemon unavailable during preflight
 - Installed coding agents: Codex CLI 0.144.4, Claude Code 2.1.211, OpenCode 1.18.3
@@ -52,8 +52,17 @@ provisional entries only after the corresponding checks have run.
   Python 3.13 environment; package import and installed `divine --help` passed
 - Server smoke: real isolated background start, authenticated health/status, and stop passed
 - Render Blueprint: authenticated CLI validation passed (`valid: true`, one static-site action)
-- Docker: Dockerfile and Compose configuration created; build remains unverified because the
-  installed Docker Desktop daemon is not running
-- GitHub CI: blocked by invalid GitHub CLI authentication
-- Render deployment: blocked until commits can be pushed to the private GitHub repository; no
-  service was created from stale remote source
+- Docker: Dockerfile and Compose configuration created; the local Docker Desktop daemon is not
+  running, while the GitHub-hosted Linux Docker build passed
+- GitHub delivery: feature commits were pushed to `origin/feat/divine-router`; documentation run
+  `29674995692` passed, and full CI run `29675267179` passed on Ubuntu, Windows, and macOS with
+  Python 3.12/3.13, including quality, coverage, package, strict docs, secret scan, and Docker jobs
+- Render deployment: static service `divine-router-docs-err0rgod` was created from the active
+  feature branch; deploy `dep-d9e6abrtqb8s739se5m0` reached `live`
+- Published-site verification: the home page, installation guide, Responses API guide, Codex
+  integration, search index, and custom CSS returned HTTP 200 at
+  `https://divine-router-docs-err0rgod.onrender.com`; the sampled published content contained no
+  high-confidence credential patterns and served `X-Content-Type-Options: nosniff`
+- Render limitation: the direct CLI service-creation command does not expose static response-header
+  configuration, so the Blueprint's `Referrer-Policy` header is not active on the manually created
+  service; the Blueprint remains the source configuration for a future dashboard sync
