@@ -24,6 +24,15 @@ provisional entries only after the corresponding checks have run.
 - Foundation: configuration, canonical models, redaction, credential resolution, and SQLite
   usage persistence implemented
 - Foundation checks: Ruff format passed, Ruff lint passed, strict mypy passed, 7 tests passed
+- Core gateway: all required API routes implemented with provider-neutral conversions
+- Provider families: OpenAI-compatible, Anthropic, and Gemini implemented; Bedrock and Vertex
+  extension interfaces defined
+- Routing/reliability: explicit aliases, automatic filtering/scoring, retries, fallbacks, circuit
+  breakers, provider health, and routing metadata implemented
+- Core checks: Ruff and strict mypy pass; 41 tests pass (mocked, no live-provider claim)
+- Core coverage: 91.30% across protocol, routing, and reliability modules (85% gate passed)
+- SDK smoke tests: official OpenAI and Anthropic Python SDKs pass non-streaming, streaming,
+  tool-call, and representative Responses requests against the local ASGI application
 - Provider live tests: not yet run
 - GitHub CI: blocked by invalid GitHub CLI authentication
 - Render deployment: not yet attempted

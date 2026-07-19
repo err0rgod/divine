@@ -66,6 +66,7 @@ class ProviderConfig(BaseModel):
     trust_level: str = "external"
     verification: VerificationStatus = VerificationStatus.COMPATIBLE_UNVERIFIED
     models: list[str] = Field(default_factory=list)
+    notes: str | None = None
 
     @field_validator("base_url")
     @classmethod

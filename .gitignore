@@ -28,6 +28,7 @@ build/
 logs/
 site/
 .divine/
+.codex-docs/
 .backups/
 
 # Local tools and OS files
