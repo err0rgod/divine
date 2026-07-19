@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,12 +20,17 @@ class DivinePaths:
 
     @classmethod
     def discover(cls) -> DivinePaths:
+        """Discover platform paths, honoring isolated per-process overrides."""
         dirs = PlatformDirs("divine-router", appauthor=False, roaming=True)
+        config_dir = Path(os.environ.get("DIVINE_CONFIG_DIR", dirs.user_config_path)).expanduser()
+        data_dir = Path(os.environ.get("DIVINE_DATA_DIR", dirs.user_data_path)).expanduser()
+        cache_dir = Path(os.environ.get("DIVINE_CACHE_DIR", dirs.user_cache_path)).expanduser()
+        log_dir = Path(os.environ.get("DIVINE_LOG_DIR", dirs.user_log_path)).expanduser()
         return cls(
-            config_dir=Path(dirs.user_config_path),
-            data_dir=Path(dirs.user_data_path),
-            cache_dir=Path(dirs.user_cache_path),
-            log_dir=Path(dirs.user_log_path),
+            config_dir=config_dir.resolve(),
+            data_dir=data_dir.resolve(),
+            cache_dir=cache_dir.resolve(),
+            log_dir=log_dir.resolve(),
         )
 
     @property

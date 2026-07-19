@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from divine_router.config.manager import ConfigManager
 from divine_router.config.models import CredentialReference, DivineConfig, ServerConfig
 from divine_router.models.canonical import CanonicalContent, ContentKind, TokenUsage
+from divine_router.paths import DivinePaths
 from divine_router.security.redaction import REDACTED, redact_mapping, redact_text, redact_url
 
 
@@ -53,3 +54,15 @@ def test_config_round_trip_and_backup(tmp_path: Path) -> None:
 def test_future_config_schema_is_rejected() -> None:
     with pytest.raises(ValueError, match="future"):
         ConfigManager.migrate({"schema_version": 999})
+
+
+def test_platform_paths_allow_isolated_environment_overrides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for kind in ("CONFIG", "DATA", "CACHE", "LOG"):
+        monkeypatch.setenv(f"DIVINE_{kind}_DIR", str(tmp_path / kind.lower()))
+    paths = DivinePaths.discover()
+    assert paths.config_dir == (tmp_path / "config").resolve()
+    assert paths.database_file == (tmp_path / "data" / "divine.db").resolve()
+    assert paths.cache_dir == (tmp_path / "cache").resolve()
+    assert paths.log_dir == (tmp_path / "log").resolve()

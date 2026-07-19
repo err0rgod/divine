@@ -13,6 +13,7 @@ __pycache__/
 .pytest_cache/
 pytest-cache-files-*/
 .test-tmp/
+.test-run-*/
 .tmp/
 .ruff_cache/
 .coverage

@@ -33,6 +33,15 @@ provisional entries only after the corresponding checks have run.
 - Core coverage: 91.30% across protocol, routing, and reliability modules (85% gate passed)
 - SDK smoke tests: official OpenAI and Anthropic Python SDKs pass non-streaming, streaming,
   tool-call, and representative Responses requests against the local ASGI application
+- Operations surface: Typer lifecycle/configuration commands and the keyboard-first Textual TUI
+  are implemented; background process control validates PID creation fingerprints and command
+  identity before sending signals
+- Coding-agent wrappers: isolated Claude Code, Codex Responses, and OpenCode profiles implemented;
+  automatic routing is rejected and Aider reports unavailable in this environment
+- Wrapper/operations verification: generated-profile, argument-forwarding, spaces-in-paths,
+  redaction, child-exit-code, CLI initialization/export, stale-PID, and TUI navigation tests pass
+- Current local suite: 55 tests passed; Ruff and strict mypy pass (mocked, no live-provider claim)
 - Provider live tests: not yet run
+- Real coding-agent end-to-end tests: not yet run; fake-agent coverage is not treated as live proof
 - GitHub CI: blocked by invalid GitHub CLI authentication
 - Render deployment: not yet attempted

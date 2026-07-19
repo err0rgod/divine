@@ -34,7 +34,7 @@ class ConfigManager:
             backup_dir.mkdir(exist_ok=True)
             backup = backup_dir / f"{self.path.name}.bak"
             shutil.copy2(self.path, backup)
-        payload = tomli_w.dumps(config.model_dump(mode="json", exclude_none=True))
+        payload = self.dumps(config)
         handle, temporary_name = tempfile.mkstemp(
             prefix=f".{self.path.name}.", suffix=".tmp", dir=self.path.parent
         )
@@ -48,6 +48,11 @@ class ConfigManager:
         finally:
             temporary.unlink(missing_ok=True)
         return backup
+
+    @staticmethod
+    def dumps(config: DivineConfig) -> str:
+        """Serialize validated configuration without resolving credential values."""
+        return tomli_w.dumps(config.model_dump(mode="json", exclude_none=True))
 
     @staticmethod
     def migrate(raw: dict[str, Any]) -> dict[str, Any]:
