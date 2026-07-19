@@ -157,6 +157,7 @@ class OpenAICompatibleProvider(Provider):
     async def stream(self, request: CanonicalRequest, model: str) -> AsyncIterator[StreamEvent]:
         response_id = f"chatcmpl-{uuid4().hex}"
         emitted = False
+        usage: dict[str, int] | None = None
         yield StreamEvent(type="response.start", response_id=response_id)
         try:
             async with self.client.stream(
@@ -175,6 +176,12 @@ class OpenAICompatibleProvider(Provider):
                     if data == "[DONE]":
                         break
                     payload = json.loads(data)
+                    raw_usage = payload.get("usage")
+                    if raw_usage:
+                        usage = {
+                            "input_tokens": int(raw_usage.get("prompt_tokens", 0)),
+                            "output_tokens": int(raw_usage.get("completion_tokens", 0)),
+                        }
                     choice = payload.get("choices", [{}])[0]
                     delta = choice.get("delta", {})
                     if delta.get("content"):
@@ -185,9 +192,14 @@ class OpenAICompatibleProvider(Provider):
                             delta=delta["content"],
                         )
                     for call in delta.get("tool_calls", []):
+                        emitted = True
                         function = call.get("function", {})
                         yield StreamEvent(
-                            type="tool_call.delta",
+                            type=(
+                                "tool_call.start"
+                                if call.get("id") or function.get("name")
+                                else "tool_call.delta"
+                            ),
                             response_id=response_id,
                             index=call.get("index", 0),
                             item={
@@ -197,7 +209,7 @@ class OpenAICompatibleProvider(Provider):
                             },
                         )
             self.health.success()
-            yield StreamEvent(type="response.complete", response_id=response_id)
+            yield StreamEvent(type="response.complete", response_id=response_id, usage=usage)
         except (httpx.HTTPError, json.JSONDecodeError, ProviderError) as exc:
             self.health.failure(type(exc).__name__)
             if isinstance(exc, ProviderError):

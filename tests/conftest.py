@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import pytest
@@ -60,9 +60,34 @@ class FakeProvider(Provider):
     async def stream(self, request: CanonicalRequest, model: str) -> AsyncIterator[StreamEvent]:
         self.requests.append(request)
         yield StreamEvent(type="response.start", response_id="chatcmpl-stream")
+        if request.tools:
+            yield StreamEvent(
+                type="tool_call.start",
+                response_id="chatcmpl-stream",
+                item={
+                    "id": "call_stream_1",
+                    "name": request.tools[0].name,
+                    "arguments": '{"value":',
+                },
+            )
+            yield StreamEvent(
+                type="tool_call.delta",
+                response_id="chatcmpl-stream",
+                item={"arguments": "1}"},
+            )
+            yield StreamEvent(
+                type="response.complete",
+                response_id="chatcmpl-stream",
+                usage={"input_tokens": 3, "output_tokens": 2},
+            )
+            return
         yield StreamEvent(type="content.delta", response_id="chatcmpl-stream", delta="DIVINE_")
         yield StreamEvent(type="content.delta", response_id="chatcmpl-stream", delta="OK")
-        yield StreamEvent(type="response.complete", response_id="chatcmpl-stream")
+        yield StreamEvent(
+            type="response.complete",
+            response_id="chatcmpl-stream",
+            usage={"input_tokens": 3, "output_tokens": 2},
+        )
 
     async def discover_models(self) -> list[str]:
         return ["demo"]
@@ -115,5 +140,9 @@ def gateway(fake_provider: FakeProvider) -> Gateway:
 
 
 @pytest.fixture
-def database() -> Database:
-    return Database(Path(".test-divine.db"))
+def database(tmp_path: Path) -> Iterator[Database]:
+    database = Database(tmp_path / "divine.db")
+    try:
+        yield database
+    finally:
+        database.close()

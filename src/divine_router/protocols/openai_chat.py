@@ -163,7 +163,25 @@ def serialize_response(response: CanonicalResponse) -> dict[str, Any]:
     }
 
 
-def stream_chunk(response_id: str, model: str, delta: str | None, finish: bool = False) -> str:
+def stream_chunk(
+    response_id: str,
+    model: str,
+    delta: str | None,
+    finish: bool = False,
+    *,
+    tool_call: dict[str, Any] | None = None,
+    tool_index: int = 0,
+    finish_reason: str | None = None,
+) -> str:
+    delta_payload: dict[str, Any] = {"content": delta} if delta is not None else {}
+    if tool_call is not None:
+        function = {
+            key: tool_call[key] for key in ("name", "arguments") if tool_call.get(key) is not None
+        }
+        call = {"index": tool_index, "function": function}
+        if tool_call.get("id"):
+            call.update({"id": tool_call["id"], "type": "function"})
+        delta_payload["tool_calls"] = [call]
     payload = {
         "id": response_id,
         "object": "chat.completion.chunk",
@@ -172,8 +190,8 @@ def stream_chunk(response_id: str, model: str, delta: str | None, finish: bool =
         "choices": [
             {
                 "index": 0,
-                "delta": {"content": delta} if delta is not None else {},
-                "finish_reason": "stop" if finish else None,
+                "delta": delta_payload,
+                "finish_reason": finish_reason or ("stop" if finish else None),
             }
         ],
     }

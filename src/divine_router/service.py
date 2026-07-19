@@ -80,11 +80,13 @@ class Gateway:
         self, request: CanonicalRequest, constraints: RouteConstraints
     ) -> tuple[AsyncIterator[StreamEvent], RouteMetadata]:
         targets, route = self._targets(request, constraints)
-        if not targets:
-            raise DivineError("no route is available", status_code=503)
-        target = targets[0]
-        return target.provider.stream(request, target.model), RouteMetadata(
-            target.provider.provider_id, target.model, route, 0
+        result = await self.executor.prepare_stream(
+            request,
+            targets,
+            self.config.server.streaming_idle_timeout_seconds,
+        )
+        return result.events, RouteMetadata(
+            result.provider_id, result.model, route, result.fallback_count
         )
 
     def _targets(

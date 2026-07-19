@@ -126,6 +126,8 @@ class GeminiProvider(Provider):
 
     async def stream(self, request: CanonicalRequest, model: str) -> AsyncIterator[StreamEvent]:
         response_id = f"gemini-{uuid4().hex}"
+        input_tokens = 0
+        output_tokens = 0
         yield StreamEvent(type="response.start", response_id=response_id)
         try:
             async with self.client.stream(
@@ -141,6 +143,9 @@ class GeminiProvider(Provider):
                     if not line.startswith("data:"):
                         continue
                     payload = json.loads(line[5:].strip())
+                    raw_usage = payload.get("usageMetadata") or {}
+                    input_tokens = int(raw_usage.get("promptTokenCount", input_tokens))
+                    output_tokens = int(raw_usage.get("candidatesTokenCount", output_tokens))
                     for part in (
                         payload.get("candidates", [{}])[0].get("content", {}).get("parts", [])
                     ):
@@ -150,8 +155,25 @@ class GeminiProvider(Provider):
                                 response_id=response_id,
                                 delta=part["text"],
                             )
+                        function_call = part.get("functionCall")
+                        if function_call:
+                            yield StreamEvent(
+                                type="tool_call.start",
+                                response_id=response_id,
+                                item={
+                                    "id": f"call_{uuid4().hex}",
+                                    "name": function_call.get("name"),
+                                    "arguments": json.dumps(
+                                        function_call.get("args", {}), separators=(",", ":")
+                                    ),
+                                },
+                            )
             self.health.success()
-            yield StreamEvent(type="response.complete", response_id=response_id)
+            yield StreamEvent(
+                type="response.complete",
+                response_id=response_id,
+                usage={"input_tokens": input_tokens, "output_tokens": output_tokens},
+            )
         except (httpx.HTTPError, json.JSONDecodeError, ProviderError) as exc:
             self.health.failure(type(exc).__name__)
             if isinstance(exc, ProviderError):

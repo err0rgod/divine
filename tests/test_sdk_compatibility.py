@@ -61,6 +61,29 @@ def test_openai_sdk_chat_nonstream_stream_and_tools(
     function_call = cast(ChatCompletionMessageFunctionToolCall, calls[0])
     assert function_call.function.name == "lookup"
 
+    tool_chunks = list(
+        client.chat.completions.create(
+            model="mock/demo",
+            messages=[{"role": "user", "content": "stream a tool"}],
+            tools=[
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "lookup",
+                        "description": "Lookup",
+                        "parameters": {"type": "object", "properties": {}},
+                    },
+                }
+            ],
+            stream=True,
+        )
+    )
+    streamed_calls = [
+        call for chunk in tool_chunks for call in (chunk.choices[0].delta.tool_calls or [])
+    ]
+    assert streamed_calls[0].function.name == "lookup"
+    assert "".join(call.function.arguments or "" for call in streamed_calls) == '{"value":1}'
+
 
 @pytest.mark.sdk
 def test_openai_sdk_responses(gateway: Gateway, transport: TestClient) -> None:
@@ -71,6 +94,25 @@ def test_openai_sdk_responses(gateway: Gateway, transport: TestClient) -> None:
     )
     response = client.responses.create(model="mock/demo", input="hello")
     assert response.output_text == "DIVINE_OK"
+    events = list(
+        client.responses.create(
+            model="mock/demo",
+            input="stream a tool",
+            tools=[
+                {
+                    "type": "function",
+                    "name": "lookup",
+                    "description": "Lookup",
+                    "parameters": {"type": "object", "properties": {}},
+                }
+            ],
+            stream=True,
+        )
+    )
+    event_types = [event.type for event in events]
+    assert "response.function_call_arguments.delta" in event_types
+    completed = next(event for event in events if event.type == "response.completed")
+    assert completed.response.output[0].type == "function_call"  # type: ignore[union-attr]
 
 
 @pytest.mark.sdk
@@ -109,3 +151,18 @@ def test_anthropic_sdk_messages_nonstream_stream_and_tools(
         ],
     )
     assert tool_message.content[0].type == "tool_use"
+
+    with client.messages.stream(
+        model="mock/demo",
+        max_tokens=20,
+        messages=[{"role": "user", "content": "stream a tool"}],
+        tools=[
+            {
+                "name": "lookup",
+                "description": "Lookup",
+                "input_schema": {"type": "object", "properties": {}},
+            }
+        ],
+    ) as stream:
+        streamed_tool_message = stream.get_final_message()
+    assert streamed_tool_message.content[0].type == "tool_use"

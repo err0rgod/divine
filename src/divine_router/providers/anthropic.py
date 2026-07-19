@@ -170,6 +170,8 @@ class AnthropicProvider(Provider):
     async def stream(self, request: CanonicalRequest, model: str) -> AsyncIterator[StreamEvent]:
         response_id = f"msg_{uuid4().hex}"
         emitted = False
+        input_tokens = 0
+        output_tokens = 0
         yield StreamEvent(type="response.start", response_id=response_id)
         try:
             async with self.client.stream(
@@ -185,7 +187,29 @@ class AnthropicProvider(Provider):
                     if not line.startswith("data:"):
                         continue
                     payload = json.loads(line[5:].strip())
-                    if payload.get("type") == "content_block_delta":
+                    if payload.get("type") == "message_start":
+                        input_tokens = int(
+                            (payload.get("message", {}).get("usage") or {}).get("input_tokens", 0)
+                        )
+                    elif payload.get("type") == "message_delta":
+                        output_tokens = int(
+                            (payload.get("usage") or {}).get("output_tokens", output_tokens)
+                        )
+                    elif payload.get("type") == "content_block_start":
+                        block = payload.get("content_block", {})
+                        if block.get("type") == "tool_use":
+                            emitted = True
+                            yield StreamEvent(
+                                type="tool_call.start",
+                                response_id=response_id,
+                                index=payload.get("index", 0),
+                                item={
+                                    "id": block.get("id"),
+                                    "name": block.get("name"),
+                                    "arguments": "",
+                                },
+                            )
+                    elif payload.get("type") == "content_block_delta":
                         delta = payload.get("delta", {})
                         if delta.get("type") == "text_delta":
                             emitted = True
@@ -202,7 +226,11 @@ class AnthropicProvider(Provider):
                                 item={"arguments": delta.get("partial_json", "")},
                             )
             self.health.success()
-            yield StreamEvent(type="response.complete", response_id=response_id)
+            yield StreamEvent(
+                type="response.complete",
+                response_id=response_id,
+                usage={"input_tokens": input_tokens, "output_tokens": output_tokens},
+            )
         except (httpx.HTTPError, json.JSONDecodeError, ProviderError) as exc:
             self.health.failure(type(exc).__name__)
             if isinstance(exc, ProviderError):

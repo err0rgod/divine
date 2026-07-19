@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import asyncio
+from collections.abc import AsyncIterator
+
 import pytest
 
 from divine_router.config.models import RetryPolicy
 from divine_router.errors import DivineError, ProviderError
 from divine_router.models.canonical import CanonicalRequest, CanonicalResponse
+from divine_router.models.streaming import StreamEvent
 from divine_router.reliability.circuit_breaker import CircuitBreaker, CircuitState
 from divine_router.reliability.executor import FallbackExecutor, ProviderTarget
 from divine_router.routing.models import ModelCapabilities, ModelRecord, ModelRegistry
@@ -57,6 +61,26 @@ class FailingProvider(FakeProvider):
         raise ProviderError("down", status_code=503)
 
 
+class FailingStreamProvider(FailingProvider):
+    async def stream(self, request: CanonicalRequest, model: str) -> AsyncIterator[StreamEvent]:
+        yield StreamEvent(type="response.start", response_id="failed")
+        raise ProviderError("stream unavailable", status_code=503)
+
+
+class MidStreamFailingProvider(FailingProvider):
+    async def stream(self, request: CanonicalRequest, model: str) -> AsyncIterator[StreamEvent]:
+        yield StreamEvent(type="response.start", response_id="partial")
+        yield StreamEvent(type="content.delta", response_id="partial", delta="visible")
+        raise ProviderError("stream broke", status_code=503, response_started=True)
+
+
+class IdleStreamProvider(FailingProvider):
+    async def stream(self, request: CanonicalRequest, model: str) -> AsyncIterator[StreamEvent]:
+        yield StreamEvent(type="response.start", response_id="idle")
+        await asyncio.sleep(1)
+        yield StreamEvent(type="response.complete", response_id="idle")
+
+
 @pytest.mark.asyncio
 async def test_fallback_executor_selects_second_provider() -> None:
     first = FailingProvider()
@@ -71,4 +95,51 @@ async def test_fallback_executor_selects_second_provider() -> None:
     )
     assert result.provider_id == "mock"
     assert result.model == "good"
+    assert result.fallback_count == 1
+
+
+@pytest.mark.asyncio
+async def test_stream_fallback_occurs_only_before_visible_output() -> None:
+    second = FakeProvider()
+    executor = FallbackExecutor(deadline_seconds=2)
+    result = await executor.prepare_stream(
+        CanonicalRequest(model="demo", messages=[], stream=True),
+        [
+            ProviderTarget(FailingStreamProvider(), "bad", RetryPolicy(max_attempts=1)),
+            ProviderTarget(second, "good", RetryPolicy(max_attempts=1)),
+        ],
+        idle_timeout_seconds=1,
+    )
+    events = [event async for event in result.events]
+    assert result.provider_id == "mock"
+    assert result.fallback_count == 1
+    assert any(event.delta == "DIVINE_" for event in events)
+
+    unused_fallback = FakeProvider()
+    committed = await executor.prepare_stream(
+        CanonicalRequest(model="demo", messages=[], stream=True),
+        [
+            ProviderTarget(MidStreamFailingProvider(), "bad", RetryPolicy(max_attempts=1)),
+            ProviderTarget(unused_fallback, "good", RetryPolicy(max_attempts=1)),
+        ],
+        idle_timeout_seconds=1,
+    )
+    with pytest.raises(ProviderError, match="stream broke"):
+        _ = [event async for event in committed.events]
+    assert committed.provider_id == "failing"
+    assert unused_fallback.requests == []
+
+
+@pytest.mark.asyncio
+async def test_stream_idle_timeout_can_fallback_before_output() -> None:
+    executor = FallbackExecutor(deadline_seconds=2)
+    result = await executor.prepare_stream(
+        CanonicalRequest(model="demo", messages=[], stream=True),
+        [
+            ProviderTarget(IdleStreamProvider(), "idle", RetryPolicy(max_attempts=1)),
+            ProviderTarget(FakeProvider(), "good", RetryPolicy(max_attempts=1)),
+        ],
+        idle_timeout_seconds=0.01,
+    )
+    assert result.provider_id == "mock"
     assert result.fallback_count == 1

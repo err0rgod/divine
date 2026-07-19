@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import DateTime, Float, Integer, String, create_engine, select
@@ -17,7 +17,7 @@ class UsageRecord(Base):
     __tablename__ = "usage_records"
 
     request_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     client_type: Mapped[str] = mapped_column(String(32), default="unknown")
     requested_model: Mapped[str] = mapped_column(String(255))
     selected_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -50,3 +50,6 @@ class Database:
         with Session(self.engine) as session:
             statement = select(UsageRecord).order_by(UsageRecord.timestamp.desc()).limit(limit)
             return list(session.scalars(statement))
+
+    def close(self) -> None:
+        self.engine.dispose()
