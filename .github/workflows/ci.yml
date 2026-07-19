@@ -54,7 +54,8 @@ jobs:
       - name: Tracked-file secret heuristics
         shell: bash
         run: |
-          if git grep -nEI '(api[_-]?key|authorization|token|secret)[[:space:]]*[=:][[:space:]]*["'"'][A-Za-z0-9_-]{12,}' -- ':!uv.lock' ':!Agents.md'; then
+          pattern="(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{30,}|AKIA[A-Z0-9]{16}|xox[baprs]-[A-Za-z0-9-]{20,}|rnd_[A-Za-z0-9_-]{20,})"
+          if git grep -nEI "$pattern" -- ':!uv.lock' ':!Agents.md'; then
             echo "Potential committed credential detected" >&2
             exit 1
           fi
