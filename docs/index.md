@@ -36,7 +36,7 @@ All endpoints require the independent Divine token by default, including localho
 ## Deployment status
 
 The [public documentation site](https://divine-router-docs-err0rgod.onrender.com/) is deployed from
-the `feat/divine-router` branch. Public documentation deployment verified on 19 July 2026.
+the `main` branch. Public documentation deployment verified on 19 July 2026.
 
 !!! warning "Compatibility is evidence-based"
 

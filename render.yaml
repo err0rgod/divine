@@ -3,7 +3,7 @@ services:
     name: divine-router-docs-err0rgod
     runtime: static
     repo: https://github.com/err0rgod/divine
-    branch: feat/divine-router
+    branch: main
     buildCommand: python -m pip install --upgrade pip && python -m pip install '.[docs]' && mkdocs build --strict
     staticPublishPath: ./site
     autoDeployTrigger: commit
