@@ -55,7 +55,7 @@ provisional entries only after the corresponding checks have run.
 - Docker: Dockerfile and Compose configuration created; the local Docker Desktop daemon is not
   running, while the GitHub-hosted Linux Docker build passed
 - GitHub delivery: feature commits were pushed to `origin/feat/divine-router`; documentation run
-  `29674995692` passed, and full CI run `29675267179` passed on Ubuntu, Windows, and macOS with
+  `29675528876` passed, and full CI run `29675528885` passed on Ubuntu, Windows, and macOS with
   Python 3.12/3.13, including quality, coverage, package, strict docs, secret scan, and Docker jobs
 - Render deployment: static service `divine-router-docs-err0rgod` was created from the active
   feature branch; deploy `dep-d9e6abrtqb8s739se5m0` reached `live`
@@ -63,6 +63,9 @@ provisional entries only after the corresponding checks have run.
   integration, search index, and custom CSS returned HTTP 200 at
   `https://divine-router-docs-err0rgod.onrender.com`; the sampled published content contained no
   high-confidence credential patterns and served `X-Content-Type-Options: nosniff`
+- Automatic deployment: pushing visible documentation commit `82015dd` started Render deploy
+  `dep-d9e6cdi8qa3s73egvmlg` with trigger `new_commit`; the deploy reached `live`, and the public
+  home page returned HTTP 200 with the new deployment-verification text
 - Render limitation: the direct CLI service-creation command does not expose static response-header
   configuration, so the Blueprint's `Referrer-Policy` header is not active on the manually created
   service; the Blueprint remains the source configuration for a future dashboard sync
